@@ -1,0 +1,20 @@
+<form action="/admin/split/<%= split.id %>/delete" method="post">
+  <div class="card" style="max-width: 6in">
+    <div class="card-header">
+      Are you sure you want to delete <%= split.title %>?
+    </div>
+    <div class="card-body">
+      <ul style="margin-bottom: 0">
+        <% for( let [address, percent] of split.payouts ) { %>
+        <li style="margin-bottom: 0"><%= address %> <%= percent %>%</li>
+        <% } %>
+      </ul>
+    </div>
+    <div class="card-footer h-stack" style="flex-direction: row-reverse">
+      <button class="button button-red" type="submit">Delete</button>
+      <a class="button button-clear" href="/admin/split/<%= split.id %>"
+        >Cancel</a
+      >
+    </div>
+  </div>
+</form>

@@ -23,6 +23,7 @@
     "koa": "^2.14.2",
     "koa-static": "^5.0.0",
     "milligram": "^1.4.1",
+    "nanoid": "^4.0.2",
     "openapi-fetch": "^0.1.4"
   },
   "devDependencies": {

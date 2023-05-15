@@ -6,11 +6,20 @@ import { resolve, dirname } from "path";
 import staticFolder from "koa-static";
 import { fileURLToPath } from "url";
 import Router from "@koa/router";
-import { createSplit, getSplit, listSplits, payoutSplit } from "./splits.js";
+import {
+  createSplit,
+  deleteSplit,
+  getSplit,
+  listSplits,
+  payoutSplit,
+} from "./splits.js";
 import { adminKey, publicDomain, publicUrl } from "./env.js";
 import { milisats } from "./helpers.js";
 import lnbits from "./lnbits/client.js";
 import { createHash } from "node:crypto";
+import { Ecc, QrCode } from "./lib/qrcodegen.js";
+import { drawSvgPath } from "./helpers/qrcode.js";
+import { nanoid } from "nanoid";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -29,34 +38,24 @@ app
   .use(router.allowedMethods())
   .use(staticFolder(resolve(__dirname, "../public")));
 
-router.all("/cb/:id", async (ctx) => {
-  const id = ctx.params.id as string;
-  try {
-    await payoutSplit(id);
-    ctx.body = "success";
-  } catch (e) {
-    console.log("Failed to payout split");
-    console.log(e);
-    ctx.body = "failed";
-  }
+router.get("/", (ctx) => {
+  ctx.body = "LNSplit";
 });
-router.get("/", async (ctx) => {
+
+// Admin views
+router.get("/admin", async (ctx) => {
   const splits = await listSplits();
   await ctx.render("index", { splits });
 });
-router.get("/splits", async (ctx) => {
-  ctx.body = await listSplits();
-});
-
-router.get("/create", async (ctx) => {
+router.get("/admin/create", async (ctx) => {
   const split = await createSplit("test", 10, [
     ["hzrd149@getalby.com", 50],
     ["tragichose49@walletofsatoshi.com", 50],
   ]);
 
-  ctx.redirect(`/split/${split.id}`);
+  ctx.redirect(`/admin/split/${split.id}`);
 });
-router.get("/split/:id", async (ctx) => {
+router.get("/admin/split/:id", async (ctx) => {
   const split = await getSplit(ctx.params.id);
   if (!split) {
     ctx.body = "no split with id " + ctx.params.id;
@@ -68,13 +67,26 @@ router.get("/split/:id", async (ctx) => {
   const lnurlp = `lnurlp://${url.hostname + url.pathname}`;
   const address = `${split.id}@${publicDomain}`;
 
-  ctx.body = {
+  await ctx.render("split/index", {
+    split,
     lnurlp,
-    lnurlpQrCode: `https://chart.googleapis.com/chart?cht=qr&chs=512x512&chl=${lnurlp}`,
+    lnurlpQrCode: `/qr?data=${lnurlp}`,
     address,
-    addressQrCode: `https://chart.googleapis.com/chart?cht=qr&chs=512x512&chl=${address}`,
-  };
+    addressQrCode: `/qr?data=${address}`,
+  });
 });
+router.get("/admin/split/:id/delete", async (ctx) => {
+  const split = await getSplit(ctx.params.id);
+  if (!split) throw new Error("invalid id");
+  await ctx.render("split/delete", { split });
+});
+router.post("/admin/split/:id/delete", async (ctx) => {
+  await deleteSplit(ctx.params.id);
+  await ctx.redirect("/admin");
+});
+
+// LNURL methods
+const webhooks = new Map<string, { split: string; amount: number }>();
 router.get(["/lnurlp/:id", "/.well-known/lnurlp/:id"], async (ctx) => {
   console.log(ctx.path, ctx.params);
   const split = await getSplit(ctx.params.id);
@@ -103,6 +115,9 @@ router.get("/lnurlp-callback/:id", async (ctx) => {
   const hash = createHash("sha256");
   hash.update(JSON.stringify(split.metadata));
 
+  const webhookId = nanoid();
+  webhooks.set(webhookId, { split: split.id, amount });
+
   const { data, error } = await lnbits.post("/api/v1/payments", {
     headers: { "X-Api-Key": adminKey },
     params: {},
@@ -112,7 +127,7 @@ router.get("/lnurlp-callback/:id", async (ctx) => {
       memo: split.id,
       internal: false,
       description_hash: hash.digest("hex"),
-      webhook: new URL(`/cb/${split.id}`, publicUrl).toString(),
+      webhook: new URL(`/lnurlp/paid/${webhookId}`, publicUrl).toString(),
     },
   });
   if (error) {
@@ -132,6 +147,43 @@ router.get("/lnurlp-callback/:id", async (ctx) => {
     routes: [],
   };
   ctx.status = 200;
+});
+router.all("/lnurlp/paid/:id", async (ctx) => {
+  const id = ctx.params.id as string;
+  if (!webhooks.has(id)) return;
+  try {
+    const { split, amount } = webhooks.get(id);
+    await payoutSplit(split, amount);
+    ctx.body = "success";
+  } catch (e) {
+    console.log("Failed to payout split");
+    console.log(e);
+    ctx.body = "failed";
+  }
+});
+
+// helpers
+router.get("/qr", async (ctx) => {
+  let lightColor = "white";
+  let darkColor = "black";
+  let border = 2;
+  let qrcode = QrCode.encodeText(ctx.query.data as string, Ecc.LOW);
+  let size = qrcode.size + border * 2;
+
+  ctx.response.body = `
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  version="1.1"
+  viewBox="0 0 ${size} ${size}"
+  stroke="none"
+  width="${size * 4}"
+  height="${size * 4}"
+>
+  <rect width="${size}" height="${size}" fill="${lightColor}" />
+  <path d="${drawSvgPath(qrcode, border)}" fill="${darkColor}" />
+</svg>
+  `.trim();
+  ctx.response.set("content-type", "image/svg+xml");
 });
 
 app.listen(3000, "0.0.0.0");

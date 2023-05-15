@@ -1,8 +1,8 @@
 import lnbits from "./lnbits/client.js";
-import { adminKey, lnbitsUrl, publicUrl } from "./env.js";
+import { adminKey } from "./env.js";
 import { LNURLPayMetadata } from "./types.js";
 
-function createId(size: number) {
+function humanFriendlyId(size: number) {
   const parts = "abcdefghijklmnopqrstuvqwxyz0123456789";
   var id = "";
   while (id.length < size) {
@@ -13,7 +13,7 @@ function createId(size: number) {
 
 export type Split = {
   id: string;
-  description: string;
+  title: string;
   amount: number;
   payouts: [string, number][];
   metadata: LNURLPayMetadata;
@@ -21,32 +21,14 @@ export type Split = {
 const splits = new Map<string, Split>();
 
 export async function createSplit(
-  description: string,
+  title: string,
   amount: number,
   payouts: [string, number][]
 ) {
-  const id = createId(6);
-  // const { data, error } = await lnbits.post("/lnurlp/api/v1/links", {
-  //   headers: { "X-Api-Key": adminKey },
-  //   params: { query: {} },
-  //   body: {
-  //     description: `${description}\nSplit: ${id}`,
-  //     max: amount * 1000,
-  //     min: amount * 1000,
-  //     comment_chars: 0,
-  //     currency: "sats",
-  //     // username: id,
-  //     webhook_url: new URL(`/cb/${id}`, "https://" + publicUrl).toString(),
-  //   },
-  // });
-  // if (error) throw error;
-  // const lnurlp = data as {
-  //   id: string;
-  // };
-
+  const id = humanFriendlyId(6);
   const split: Split = {
     id,
-    description,
+    title,
     amount,
     payouts,
     metadata: [["text/plain", `Split: ${id}`]],
@@ -57,14 +39,14 @@ export async function createSplit(
   return split;
 }
 
-export async function payoutSplit(id: string) {
+export async function payoutSplit(id: string, amount: number) {
   const split = await getSplit(id);
   if (!id) throw new Error(`no split with id ${id}`);
 
-  console.log(`Start paying split ${id}`);
+  console.log(`Start payout ${id}`);
 
   for (const [address, percent] of split.payouts) {
-    const payoutAmount = Math.floor(split.amount * (percent / 100));
+    const payoutAmount = Math.floor(amount * (percent / 100));
     console.log(`Paying ${address} ${percent}% (${payoutAmount} sats)`);
 
     let [name, domain] = address.split("@");
@@ -93,9 +75,12 @@ export async function payoutSplit(id: string) {
     } else console.log("Paid", data);
   }
 
-  console.log(`Finished paying ${id}`);
+  console.log(`Finished payout ${id}`);
 }
 
+export async function deleteSplit(id: string) {
+  splits.delete(id);
+}
 export async function listSplits() {
   return Array.from(splits.values());
 }

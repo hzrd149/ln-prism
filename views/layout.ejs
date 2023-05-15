@@ -16,9 +16,19 @@
       rel="stylesheet"
       href="https://unpkg.com/milligram@1/dist/milligram.min.css"
     />
+    <link rel="stylesheet" href="/styles.css" />
     <title>LN Split</title>
   </head>
   <body>
-    <%- body %>
+    <main class="container">
+      <header class="h-stack">
+        <a href="/admin">
+          <h1>LN Split</h1>
+        </a>
+        <span style="flex: 1"></span>
+        <a class="button" href="/admin/create">Create Split</a>
+      </header>
+      <%- body %>
+    </main>
   </body>
 </html>

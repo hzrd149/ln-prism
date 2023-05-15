@@ -1,34 +1,27 @@
-<main class="container">
-  <a class="button" href="/create">Create Split</a>
-  <button class="button button-outline">Outlined Button</button>
-  <input class="button button-clear" type="submit" value="Clear Button" />
-
-  <table>
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Split</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      <% for( let split of splits ) { %>
-      <tr>
-        <td><%= split.id %></td>
-        <td>
-          <ul style="margin-bottom: 0">
-            <% for( let [address, percent] of split.payouts ) { %>
-            <li style="margin-bottom: 0"><%= address %> <%= percent %>%</li>
-            <% } %>
-          </ul>
-        </td>
-        <td>
-          <a class="button button-outline" href="/split/<%= split.id %>"
-            >View</a
-          >
-        </td>
-      </tr>
-      <% } %>
-    </tbody>
-  </table>
-</main>
+<div class="card-grid">
+  <% for( let split of splits ) { %>
+  <div class="card" style="flex-shrink: 0; min-width: 40rem; flex: 0">
+    <div class="card-header">
+      <%= split.title %> <small>(<%= split.id %>)</small>
+    </div>
+    <div class="card-body">
+      <ul style="margin-bottom: 0">
+        <% for( let [address, percent] of split.payouts ) { %>
+        <li style="margin-bottom: 0"><%= address %> <%= percent %>%</li>
+        <% } %>
+      </ul>
+    </div>
+    <div class="card-footer h-stack">
+      <a class="button button-outline" href="/admin/split/<%= split.id %>"
+        >View</a
+      >
+      <a
+        class="button button-outline button-red"
+        href="/admin/split/<%= split.id %>/delete"
+      >
+        Delete
+      </a>
+    </div>
+  </div>
+  <% } %>
+</div>

@@ -1,0 +1,41 @@
+.card-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.card {
+  border: 0.1rem solid #606c76;
+  border-radius: 0.4rem;
+  overflow: hidden;
+  padding: 0.5rem 1.5rem;
+}
+.card-header {
+  font-size: 1.5em;
+  font-weight: bold;
+}
+.card-body {
+  padding: 0.5rem 0;
+}
+.card-footer {
+  padding: 0.5rem 0;
+}
+.card-footer .button {
+  margin-bottom: 0;
+}
+
+.h-stack {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.button.button-red {
+  border-color: #d54e4e;
+}
+.button:not(.button-outline).button-red {
+  background-color: #d54e4e;
+}
+.button-outline.button-red {
+  color: #d54e4e;
+}
