@@ -41,7 +41,8 @@ router.all("/cb/:id", async (ctx) => {
   }
 });
 router.get("/", async (ctx) => {
-  await ctx.render("index", {});
+  const splits = await listSplits();
+  await ctx.render("index", { splits });
 });
 router.get("/splits", async (ctx) => {
   ctx.body = await listSplits();
