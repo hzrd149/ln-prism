@@ -2,15 +2,15 @@
   "name": "lnsplit",
   "version": "1.0.0",
   "type": "module",
-  "main": "./lib/index.js",
-  "typings": "./lib/index.d.ts",
+  "main": "./build/index.js",
+  "typings": "./build/index.d.ts",
   "license": "MIT",
   "scripts": {
     "generate-types": "openapi-typescript https://legend.lnbits.com/openapi.json -o src/lnbits/api.ts",
     "build": "tsc",
-    "dev": "yarn build --watch & nodemon --watch lib node lib/index.js",
-    "format": "prettier -w .",
-    "start": "node lib/index.js"
+    "dev": "yarn build --watch & nodemon --watch build node build/index.js",
+    "format": "prettier -w . --ignore-path .gitignore",
+    "start": "node build/index.js"
   },
   "dependencies": {
     "@koa/cors": "^4.0.0",
@@ -40,6 +40,6 @@
   },
   "files": [
     "./bin/*",
-    "./lib/*"
+    "./build/*"
   ]
 }

@@ -1,1 +1,1 @@
-# Typescript module
+# ln-address-splitter

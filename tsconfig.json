@@ -4,6 +4,6 @@
     "target": "ESNext",
     "moduleResolution": "nodenext",
     "module": "ESNext",
-    "outDir": "lib"
+    "outDir": "build"
   }
 }
