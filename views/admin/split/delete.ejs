@@ -1,8 +1,8 @@
+<h1><%= splitAddress %></h1>
+
 <form action="/admin/split/<%= split.id %>/delete" method="post">
   <div class="card" style="max-width: 6in">
-    <div class="card-header">
-      Are you sure you want to delete <%= split.title %>?
-    </div>
+    <div class="card-header">Delete this split?</div>
     <div class="card-body">
       <ul style="margin-bottom: 0">
         <% for( let [address, percent] of split.payouts ) { %>

@@ -1,6 +1,8 @@
+<h1><%= splitAddress %></h1>
+
 <form action="/admin/split/<%= split.id %>/remove/<%= address %>" method="post">
   <div class="card" style="max-width: 6in">
-    <div class="card-header">Remove <%= address %> from split?</div>
+    <div class="card-header">Remove <%= address %>?</div>
     <div class="card-body">
       Are you sure you want to remove <%= address %> from <%= split.id %>@<%=
       publicDomain %>?

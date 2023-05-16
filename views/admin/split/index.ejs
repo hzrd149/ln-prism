@@ -1,8 +1,7 @@
-<div class="h-stack">
-  <h2><%= split.id %>@<%= publicDomain %></h2>
-</div>
+<h1><%= splitAddress %></h1>
+<a href="/split/<%= split.id %>" class="button">View public page</a>
 <a href="/split/<%= split.id %>/invoice?amount=50" class="button button-outline"
-  >Create Invoice</a
+  >Create invoice</a
 >
 
 <h3>Payout</h3>
@@ -22,12 +21,12 @@
 
 <div>
   <h3>LNURL</h3>
-  <code><%= lnurlp %></code>
+  <code><%= splitLnurlp %></code>
   <!-- <div class="button button-outline">Copy</div> -->
   <br />
-  <a href="<%= lnurlp %>" target="_blank">
+  <a href="<%= splitLnurlp %>" target="_blank">
     <img
-      src="<%= lnurlpQrCode %>"
+      src="/qr?data=<%= splitLnurlp %>"
       alt="lnurlp qr code"
       style="width: 100%; max-width: 4in"
     />
@@ -35,12 +34,12 @@
 </div>
 <div>
   <h3>LN Address</h3>
-  <code><%= address %></code>
+  <code><%= splitAddress %></code>
   <!-- <div class="button button-outline">Copy</div> -->
   <br />
-  <a href="lightning:<%= address %>" target="_blank">
+  <a href="lightning:<%= splitAddress %>" target="_blank">
     <img
-      src="<%= addressQrCode %>"
+      src="/qr?data=<%= splitAddress %>"
       alt="address qr code"
       style="width: 100%; max-width: 4in"
     />

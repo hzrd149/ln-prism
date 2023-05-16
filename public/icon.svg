@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="48"
+   height="48"
+   viewBox="0 0 12.7 12.7"
+   version="1.1"
+   id="svg5"
+   inkscape:version="1.2.2 (732a01da63, 2022-12-09, custom)"
+   sodipodi:docname="icon.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview7"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="true"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     showgrid="false"
+     inkscape:zoom="14.638496"
+     inkscape:cx="10.895928"
+     inkscape:cy="26.676238"
+     inkscape:window-width="2502"
+     inkscape:window-height="1376"
+     inkscape:window-x="58"
+     inkscape:window-y="27"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1" />
+  <defs
+     id="defs2" />
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <circle
+       style="fill:#ffffff;fill-opacity:1;stroke-width:0.4;stroke-linecap:round"
+       id="path4639"
+       cx="6.3499999"
+       cy="6.3499999"
+       r="6.3499999" />
+    <g
+       id="g2145"
+       transform="matrix(0.91031943,0,0,0.91031943,0.8452281,3.3945815)">
+      <circle
+         style="fill:#646464;fill-opacity:1;stroke-width:0.4;stroke-linecap:round"
+         id="path1967"
+         cx="3.5810804"
+         cy="3.973042"
+         r="1.1458011" />
+      <circle
+         style="fill:#646464;fill-opacity:1;stroke-width:0.4;stroke-linecap:round"
+         id="path1969"
+         cx="5.0782814"
+         cy="2.4427025"
+         r="1.5568717" />
+      <circle
+         style="fill:#646464;fill-opacity:1;stroke-width:0.4;stroke-linecap:round"
+         id="path1971"
+         cx="6.7289157"
+         cy="2.7939391"
+         r="1.1476409" />
+      <circle
+         style="fill:#646464;fill-opacity:1;stroke-width:0.4;stroke-linecap:round"
+         id="path1973"
+         cx="7.8765564"
+         cy="3.5909364"
+         r="0.79699737" />
+      <circle
+         style="fill:#646464;fill-opacity:1;stroke-width:0.4;stroke-linecap:round"
+         id="path2083"
+         cx="8.6735535"
+         cy="4.3765678"
+         r="0.7422753" />
+      <rect
+         style="fill:#646464;fill-opacity:1;stroke-width:0.35059;stroke-linecap:round"
+         id="rect2137"
+         width="5.0924735"
+         height="1.6572543"
+         x="3.5810804"
+         y="3.4615889" />
+    </g>
+    <path
+       style="fill:#f6ca00;fill-opacity:1;stroke-width:0.4;stroke-linecap:round"
+       d="M 6.9326904,0.5669727 5.8274935,2.0221193 6.4027028,2.2352132 5.7344402,3.5890493 7.372861,1.8619397 6.7231762,1.7573103 Z"
+       id="path2248"
+       sodipodi:nodetypes="ccccccc" />
+    <path
+       style="fill:#f6ca00;fill-opacity:1;stroke-width:0.4;stroke-linecap:round"
+       d="M 3.7017451,8.5913695 2.6481692,10.084316 3.2304861,10.277142 2.6100298,11.653543 4.1869816,9.8701326 3.5340321,9.7883123 Z"
+       id="path2299"
+       sodipodi:nodetypes="ccccccc" />
+    <path
+       style="fill:#f6ca00;fill-opacity:1;stroke-width:0.4;stroke-linecap:round"
+       d="M 6.125388,8.524241 5.0718121,10.017188 5.654129,10.210014 5.0336727,11.586415 6.6106245,9.8030041 5.957675,9.7211838 Z"
+       id="path2301"
+       sodipodi:nodetypes="ccccccc" />
+    <path
+       style="fill:#f6ca00;fill-opacity:1;stroke-width:0.4;stroke-linecap:round"
+       d="M 8.6457025,8.5378289 7.5921266,10.030776 8.1744435,10.223602 7.5539872,11.600003 9.130939,9.816592 8.4779895,9.7347717 Z"
+       id="path2303"
+       sodipodi:nodetypes="ccccccc" />
+    <text
+       xml:space="preserve"
+       style="font-size:2.24447px;fill:#f6ca00;fill-opacity:1;stroke-width:0.282769;stroke-linecap:round"
+       x="4.7975855"
+       y="7.0378089"
+       id="text3116"><tspan
+         sodipodi:role="line"
+         id="tspan3114"
+         style="stroke-width:0.282769"
+         x="4.7975855"
+         y="7.0378089">@</tspan></text>
+  </g>
+</svg>

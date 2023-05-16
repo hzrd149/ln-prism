@@ -35,9 +35,7 @@ app
   .use(router.allowedMethods())
   .use(staticFolder(resolve(__dirname, "../public")));
 
-router.get("/", (ctx) => {
-  ctx.body = "LNSplit";
-});
+router.get("/", (ctx) => ctx.render("index"));
 
 // Admin views
 router.use((ctx, next) => {
@@ -56,6 +54,10 @@ router.param("id", async (id, ctx, next) => {
   }
 
   ctx.state.split = split;
+  ctx.state.splitAddress = split.id+'@'+publicDomain
+  const url = new URL(`/lnurlp/${split.id}`, publicUrl);
+  ctx.state.splitLnurlp = `lnurlp://${url.hostname + url.pathname}`;
+
   return next();
 });
 
@@ -72,20 +74,7 @@ router.get("/admin/create", async (ctx) => {
   ctx.redirect(`/admin/split/${split.id}`);
 });
 
-router.get("/admin/split/:id", async (ctx) => {
-  const split = ctx.state.split;
-  const url = new URL(`/lnurlp/${split.id}`, publicUrl);
-  const lnurlp = `lnurlp://${url.hostname + url.pathname}`;
-  const address = `${split.id}@${publicDomain}`;
-
-  await ctx.render("admin/split/index", {
-    split,
-    lnurlp,
-    lnurlpQrCode: `/qr?data=${lnurlp}`,
-    address,
-    addressQrCode: `/qr?data=${address}`,
-  });
-});
+router.get("/admin/split/:id", (ctx) => ctx.render("admin/split/index"));
 router.get("/admin/split/:id/delete", (ctx) =>
   ctx.render("admin/split/delete")
 );
@@ -183,6 +172,7 @@ router.all("/invoice/paid/:webhookId", async (ctx) => {
 });
 
 // Public views
+router.get("/split/:id", async (ctx) => ctx.render("split/index"));
 router.get("/split/:id/invoice", async (ctx) => {
   const amount = Math.round(parseInt(ctx.query.amount as string));
   if (!amount) throw new Error("missing amount");
