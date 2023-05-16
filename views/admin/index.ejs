@@ -1,13 +1,12 @@
+<a class="button" href="/admin/create">Create Split</a>
 <div class="card-grid">
   <% for( let split of splits ) { %>
   <div class="card" style="flex-shrink: 0; min-width: 40rem; flex: 0">
-    <div class="card-header">
-      <%= split.title %> <small>(<%= split.id %>)</small>
-    </div>
+    <div class="card-header"><%= split.id %>@<%= publicDomain %></div>
     <div class="card-body">
       <ul style="margin-bottom: 0">
-        <% for( let [address, percent] of split.payouts ) { %>
-        <li style="margin-bottom: 0"><%= address %> <%= percent %>%</li>
+        <% for( let [address, weight] of split.payouts ) { %>
+        <li style="margin-bottom: 0"><%= address %> <%= weight %></li>
         <% } %>
       </ul>
     </div>

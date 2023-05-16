@@ -1,6 +1,7 @@
 import lnbits from "./lnbits/client.js";
 import { adminKey } from "./env.js";
 import { LNURLPayMetadata } from "./types.js";
+import { loadSplit, saveSplit } from "./db.js";
 
 function humanFriendlyId(size: number) {
   const parts = "abcdefghijklmnopqrstuvqwxyz0123456789";
@@ -18,7 +19,6 @@ export type Split = {
   payouts: [string, number][];
   metadata: LNURLPayMetadata;
 };
-const splits = new Map<string, Split>();
 
 export async function createSplit(
   title: string,
@@ -34,20 +34,25 @@ export async function createSplit(
     metadata: [["text/plain", `Split: ${id}`]],
   };
 
-  splits.set(split.id, split);
+  await saveSplit(split);
 
   return split;
 }
 
 export async function payoutSplit(id: string, amount: number) {
-  const split = await getSplit(id);
+  const split = await loadSplit(id);
   if (!id) throw new Error(`no split with id ${id}`);
 
   console.log(`Start payout ${id}`);
 
-  for (const [address, percent] of split.payouts) {
-    const payoutAmount = Math.floor(amount * (percent / 100));
-    console.log(`Paying ${address} ${percent}% (${payoutAmount} sats)`);
+  const totalWeight = split.payouts.reduce((v, [_a, w]) => v + w, 0);
+
+  for (const [address, weight] of split.payouts) {
+    const payoutAmount = Math.floor((weight / totalWeight) * amount);
+    let percent = (weight / totalWeight) * 100;
+    console.log(
+      `Paying ${address} ${percent.toFixed(2)}% (${payoutAmount} sats)`
+    );
 
     let [name, domain] = address.split("@");
     const lnurl = `https://${domain}/.well-known/lnurlp/${name}`;
@@ -65,7 +70,7 @@ export async function payoutSplit(id: string, amount: number) {
       params: {},
       body: {
         out: true,
-        memo: `Split: ${id}, Paying ${address} ${percent}%`,
+        memo: `Split: ${id}, Paying ${address} ${weight}%`,
         bolt11: payRequest,
       },
     });
@@ -76,14 +81,4 @@ export async function payoutSplit(id: string, amount: number) {
   }
 
   console.log(`Finished payout ${id}`);
-}
-
-export async function deleteSplit(id: string) {
-  splits.delete(id);
-}
-export async function listSplits() {
-  return Array.from(splits.values());
-}
-export async function getSplit(id: string) {
-  return splits.get(id);
 }
