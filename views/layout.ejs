@@ -23,10 +23,12 @@
   <body>
     <main class="container">
       <header class="h-stack" style="margin-bottom: 1rem">
+        <% if (path.includes('/admin')) { %>
         <a href="/admin" class="h-stack">
           <img src="/icon.svg" height="48" />
           <p style="margin: 0; font-size: 3rem">LN Split</p>
         </a>
+        <% } %>
         <span style="flex: 1"></span>
       </header>
       <%- body %>

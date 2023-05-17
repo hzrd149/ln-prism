@@ -1,47 +1,68 @@
 <h1><%= splitAddress %></h1>
-<a href="/split/<%= split.id %>" class="button">View public page</a>
-<a href="/split/<%= split.id %>/invoice?amount=50" class="button button-outline"
-  >Create invoice</a
+<a href="/split/<%= split.name %>" class="button">View public page</a>
+<a
+  class="button button-outline button-red"
+  href="/admin/split/<%= split.name %>/delete"
 >
+  Delete split
+</a>
 
 <h3>Payout</h3>
-<ul style="margin-bottom: 0">
-  <% for( let [address, weight] of split.payouts ) { %>
-  <li style="margin-bottom: 0"><%= address %> <%= weight %></li>
-  <a
-    href="<%= path %>/remove/<%= address %>"
-    class="button button-outline button-red"
-    >Remove</a
-  >
-  <% } %>
-</ul>
-<a href="/admin/split/<%= split.id %>/add" class="button button-outline"
+
+<table>
+  <thead>
+    <tr>
+      <th>Address</th>
+      <th>Weight</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <% split.payouts.forEach(([address, weight]) => { %>
+    <tr>
+      <td><%= address %></td>
+      <td><%= weight %></td>
+      <td>
+        <a
+          href="<%= path %>/remove/<%= address %>"
+          class="button button-outline button-red"
+          >Remove</a
+        >
+      </td>
+    </tr>
+    <% }) %>
+  </tbody>
+</table>
+
+<a href="/admin/split/<%= split.name %>/add" class="button button-outline"
   >Add address</a
 >
 
-<div>
-  <h3>LNURL</h3>
-  <code><%= splitLnurlp %></code>
-  <!-- <div class="button button-outline">Copy</div> -->
-  <br />
-  <a href="<%= splitLnurlp %>" target="_blank">
-    <img
-      src="/qr?data=<%= splitLnurlp %>"
-      alt="lnurlp qr code"
-      style="width: 100%; max-width: 4in"
-    />
-  </a>
-</div>
-<div>
-  <h3>LN Address</h3>
-  <code><%= splitAddress %></code>
-  <!-- <div class="button button-outline">Copy</div> -->
-  <br />
-  <a href="lightning:<%= splitAddress %>" target="_blank">
-    <img
-      src="/qr?data=<%= splitAddress %>"
-      alt="address qr code"
-      style="width: 100%; max-width: 4in"
-    />
-  </a>
+<div class="h-stack flex-wrap">
+  <div style="flex: 1 0">
+    <h3>LNURL</h3>
+    <code><%= splitLnurlp %></code>
+    <!-- <div class="button button-outline">Copy</div> -->
+    <br />
+    <a href="<%= splitLnurlp %>" target="_blank">
+      <img
+        src="/qr?data=<%= splitLnurlp %>"
+        alt="lnurlp qr code"
+        style="width: 100%; max-width: 4in"
+      />
+    </a>
+  </div>
+  <div style="flex: 1 0">
+    <h3>LN Address</h3>
+    <code><%= splitAddress %></code>
+    <!-- <div class="button button-outline">Copy</div> -->
+    <br />
+    <a href="lightning:<%= splitAddress %>" target="_blank">
+      <img
+        src="/qr?data=<%= splitAddress %>"
+        alt="address qr code"
+        style="width: 100%; max-width: 4in"
+      />
+    </a>
+  </div>
 </div>

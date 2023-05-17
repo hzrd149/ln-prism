@@ -2,7 +2,7 @@
 <div class="card-grid">
   <% for( let split of splits ) { %>
   <div class="card" style="flex-shrink: 0; min-width: 40rem; flex: 0">
-    <div class="card-header"><%= split.id %>@<%= publicDomain %></div>
+    <div class="card-header"><%= split.name %>@<%= publicDomain %></div>
     <div class="card-body">
       <ul style="margin-bottom: 0">
         <% for( let [address, weight] of split.payouts ) { %>
@@ -11,12 +11,12 @@
       </ul>
     </div>
     <div class="card-footer h-stack">
-      <a class="button button-outline" href="/admin/split/<%= split.id %>"
-        >View</a
+      <a class="button button-outline" href="/admin/split/<%= split.name %>"
+        >Edit</a
       >
       <a
         class="button button-outline button-red"
-        href="/admin/split/<%= split.id %>/delete"
+        href="/admin/split/<%= split.name %>/delete"
       >
         Delete
       </a>

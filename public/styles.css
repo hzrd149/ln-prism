@@ -39,6 +39,9 @@ body {
   gap: 1rem;
   align-items: center;
 }
+.flex-wrap {
+  flex-wrap: wrap;
+}
 
 .button.button-red {
   border-color: #d54e4e;

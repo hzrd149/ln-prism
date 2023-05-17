@@ -1,22 +1,25 @@
 <h1><%= splitAddress %></h1>
 
-<form action="/admin/split/<%= split.id %>/add" method="post">
+<form action="/admin/split/<%= split.name %>/add" method="post">
   <label for="address">Add Address</label>
-  <div class="h-stack">
+  <div class="h-stack flex-wrap">
     <input
       type="email"
       placeholder="user@domain.com"
       id="address"
       name="address"
+      style="flex: 2; min-width: 2in"
+      required
     />
     <input
       type="number"
       name="weight"
       min="1"
       size="3"
-      style="width: auto"
       step="1"
       placeholder="weight"
+      style="flex: 1; min-width: 1in"
+      required
     />
     <button class="button button-outline">Add</button>
   </div>

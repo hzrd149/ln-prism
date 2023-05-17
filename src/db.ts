@@ -27,7 +27,7 @@ const db = new Low(adapter, defaultData);
 await db.read();
 
 export async function saveSplit(split: Split) {
-  db.data.splits[split.id] = split;
+  db.data.splits[split.name] = split;
   await db.write();
 }
 export async function loadSplit(id: string) {

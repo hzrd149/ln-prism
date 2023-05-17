@@ -13,25 +13,16 @@ function humanFriendlyId(size: number) {
 }
 
 export type Split = {
-  id: string;
-  title: string;
-  amount: number;
+  name: string;
   payouts: [string, number][];
   metadata: LNURLPayMetadata;
 };
 
-export async function createSplit(
-  title: string,
-  amount: number,
-  payouts: [string, number][]
-) {
-  const id = humanFriendlyId(6);
+export async function createSplit(name: string, payouts: [string, number][]) {
   const split: Split = {
-    id,
-    title,
-    amount,
+    name,
     payouts,
-    metadata: [["text/plain", `Split: ${id}`]],
+    metadata: [["text/plain", `Split: ${name}`]],
   };
 
   await saveSplit(split);

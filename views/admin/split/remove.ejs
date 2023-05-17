@@ -1,15 +1,18 @@
 <h1><%= splitAddress %></h1>
 
-<form action="/admin/split/<%= split.id %>/remove/<%= address %>" method="post">
+<form
+  action="/admin/split/<%= split.name %>/remove/<%= address %>"
+  method="post"
+>
   <div class="card" style="max-width: 6in">
     <div class="card-header">Remove <%= address %>?</div>
     <div class="card-body">
-      Are you sure you want to remove <%= address %> from <%= split.id %>@<%=
+      Are you sure you want to remove <%= address %> from <%= split.name %>@<%=
       publicDomain %>?
     </div>
     <div class="card-footer h-stack" style="flex-direction: row-reverse">
       <button class="button button-red" type="submit">Remove</button>
-      <a class="button button-clear" href="/admin/split/<%= split.id %>"
+      <a class="button button-clear" href="/admin/split/<%= split.name %>"
         >Cancel</a
       >
     </div>
