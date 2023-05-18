@@ -1,5 +1,7 @@
 # LN-Address-Splitter
 
+![image](https://github.com/hzrd149/ln-address-splitter/assets/8001706/42120885-c267-416c-8a05-649a3188433f)
+
 ## Setting up a reverse proxy
 
 For the lightning addresses and LNURL endpoints to work this app needs to be served at the root of a domain ( `https://example.com/` ) it wont work if its hosted at a sub path ( `https://example.com/splits` )
