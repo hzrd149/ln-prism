@@ -1,8 +1,8 @@
-<h1><%= splitAddress %></h1>
-<a href="/split/<%= split.name %>" class="button">View public page</a>
+<h1><%- splitAddress %></h1>
+<a href="/split/<%- split.name %>" class="button">View public page</a>
 <a
   class="button button-outline button-red"
-  href="/admin/split/<%= split.name %>/delete"
+  href="/admin/split/<%- split.name %>/delete"
 >
   Delete split
 </a>
@@ -20,11 +20,11 @@
   <tbody>
     <% split.payouts.forEach(([address, weight]) => { %>
     <tr>
-      <td><%= address %></td>
-      <td><%= weight %></td>
+      <td><%- address %></td>
+      <td><%- weight %></td>
       <td>
         <a
-          href="<%= path %>/remove/<%= address %>"
+          href="<%- path %>/remove/<%- address %>"
           class="button button-outline button-red"
           >Remove</a
         >
@@ -34,19 +34,19 @@
   </tbody>
 </table>
 
-<a href="/admin/split/<%= split.name %>/add" class="button button-outline"
+<a href="/admin/split/<%- split.name %>/add" class="button button-outline"
   >Add address</a
 >
 
 <div class="h-stack flex-wrap">
   <div style="flex: 1 0">
     <h3>LNURL</h3>
-    <code><%= splitLnurlp %></code>
+    <code><%- splitLnurlp %></code>
     <!-- <div class="button button-outline">Copy</div> -->
     <br />
-    <a href="<%= splitLnurlp %>" target="_blank">
+    <a href="<%- splitLnurlp %>" target="_blank">
       <img
-        src="/qr?data=<%= splitLnurlp %>"
+        src="/qr?data=<%- splitLnurlp %>"
         alt="lnurlp qr code"
         style="width: 100%; max-width: 4in"
       />
@@ -54,12 +54,12 @@
   </div>
   <div style="flex: 1 0">
     <h3>LN Address</h3>
-    <code><%= splitAddress %></code>
+    <code><%- splitAddress %></code>
     <!-- <div class="button button-outline">Copy</div> -->
     <br />
-    <a href="lightning:<%= splitAddress %>" target="_blank">
+    <a href="lightning:<%- splitAddress %>" target="_blank">
       <img
-        src="/qr?data=<%= splitAddress %>"
+        src="/qr?data=<%- splitAddress %>"
         alt="address qr code"
         style="width: 100%; max-width: 4in"
       />

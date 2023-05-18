@@ -1,18 +1,18 @@
-<h1><%= splitAddress %></h1>
+<h1><%- splitAddress %></h1>
 
-<form action="/admin/split/<%= split.name %>/delete" method="post">
+<form action="/admin/split/<%- split.name %>/delete" method="post">
   <div class="card" style="max-width: 6in">
     <div class="card-header">Delete this split?</div>
     <div class="card-body">
       <ul style="margin-bottom: 0">
         <% for( let [address, percent] of split.payouts ) { %>
-        <li style="margin-bottom: 0"><%= address %> <%= percent %>%</li>
+        <li style="margin-bottom: 0"><%- address %> <%- percent %>%</li>
         <% } %>
       </ul>
     </div>
     <div class="card-footer h-stack" style="flex-direction: row-reverse">
       <button class="button button-red" type="submit">Delete</button>
-      <a class="button button-clear" href="/admin/split/<%= split.name %>"
+      <a class="button button-clear" href="/admin/split/<%- split.name %>"
         >Cancel</a
       >
     </div>
