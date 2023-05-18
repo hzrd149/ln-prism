@@ -17,3 +17,4 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }} # Provide GITHUB_TOKEN to login into the GitHub Packages
           image-name: ln-address-splitter # Provide only Docker image name, tag will be automatically set to latest
           dockerfile: Dockerfile # Provide custom Dockerfile name
+          custom-args: --platform=linux/arm64,linux/amd64
