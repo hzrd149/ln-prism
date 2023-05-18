@@ -21,6 +21,7 @@
     <tr>
       <th>Address</th>
       <th>Weight</th>
+      <th>Percent</th>
     </tr>
   </thead>
   <tbody>
@@ -28,6 +29,7 @@
     <tr>
       <td><%- address %></td>
       <td><%- weight %></td>
+      <td><%- ((weight/totalWeight)*100).toFixed(2) %>%</td>
     </tr>
     <% }) %>
   </tbody>

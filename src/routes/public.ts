@@ -8,6 +8,7 @@ routes.get("/", (ctx) => ctx.render("index"));
 
 routes.get("/split/:splitId", async (ctx) => {
   await ctx.render("split/index", {
+    totalWeight: ctx.state.split.payouts.reduce((v, p) => v + p[1], 0),
     ogImage: new URL(
       `/split/${ctx.state.split.name}/address.png`,
       ctx.state.publicUrl

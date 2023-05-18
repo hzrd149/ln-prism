@@ -14,6 +14,7 @@
     <tr>
       <th>Address</th>
       <th>Weight</th>
+      <th>Percent</th>
       <th></th>
     </tr>
   </thead>
@@ -22,6 +23,7 @@
     <tr>
       <td><%- address %></td>
       <td><%- weight %></td>
+      <td><%- ((weight/totalWeight)*100).toFixed(2) %>%</td>
       <td>
         <a
           href="<%- path %>/remove/<%- address %>"

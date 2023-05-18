@@ -29,7 +29,11 @@ routes.post("/admin/create", async (ctx) => {
   ctx.redirect(`/admin/split/${split.name}`);
 });
 
-routes.get("/admin/split/:splitId", (ctx) => ctx.render("admin/split/index"));
+routes.get("/admin/split/:splitId", (ctx) => {
+  return ctx.render("admin/split/index", {
+    totalWeight: ctx.state.split.payouts.reduce((v, p) => v + p[1], 0),
+  });
+});
 
 // delete
 routes.get("/admin/split/:splitId/delete", (ctx) =>
