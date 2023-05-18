@@ -1,12 +1,11 @@
 import Router from "@koa/router";
-import { publicDomain, publicUrl } from "../env.js";
 import { loadSplit } from "../db.js";
 
 export function setupParams(router: Router) {
   router.use((ctx, next) => {
     ctx.state.path = ctx.path;
-    ctx.state.publicDomain = publicDomain;
-    ctx.state.publicUrl = publicUrl;
+    ctx.state.publicDomain = ctx.hostname;
+    ctx.state.publicUrl = "https://" + ctx.hostname;
     return next();
   });
 
@@ -20,8 +19,8 @@ export function setupParams(router: Router) {
     }
 
     ctx.state.split = split;
-    ctx.state.splitAddress = split.name + "@" + publicDomain;
-    const url = new URL(`/lnurlp/${split.name}`, publicUrl);
+    ctx.state.splitAddress = split.name + "@" + ctx.hostname;
+    const url = new URL(`/lnurlp/${split.name}`, ctx.state.publicUrl);
     ctx.state.splitLnurlp = `lnurlp://${url.hostname + url.pathname}`;
 
     return next();

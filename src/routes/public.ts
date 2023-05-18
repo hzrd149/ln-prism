@@ -12,7 +12,8 @@ routes.get("/split/:splitId/invoice", async (ctx) => {
   if (!amount) throw new Error("missing amount");
   const { payment_request, payment_hash } = await createInvoiceForSplit(
     ctx.state.split,
-    amount
+    amount,
+    ctx.state.publicUrl
   );
 
   await ctx.render("split/invoice", {

@@ -1,0 +1,23 @@
+version: "3"
+
+services:
+  ln-address-spliter:
+    build: .
+    image: ghcr.io/hzrd149/ln-address-splitter
+    ports:
+      - 3000:3000/tcp
+    environment:
+      # This is where all the splits will be stored
+      DB_PATH: /data/splits.json
+      # The base url to the lnbits instance (can be http for local nodes)
+      LNBITS_URL: "https://legend.lnbits.com"
+      # The lnbits wallet
+      WALLET_ID: "..."
+      # Admin key for creating and paying invoices
+      ADMIN_KEY: "..."
+      # The username and password to login to the admin dashboard
+      # Remove these if you dont wany any auth on the /admin route
+      LOGIN_USER: admin
+      LOGIN_PASSWORD: changeme
+    volumes:
+      - ./data:/data

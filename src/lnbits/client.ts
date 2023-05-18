@@ -1,9 +1,12 @@
 const { default: createClient } = await import("openapi-fetch");
-import { lnbitsUrl } from "../env.js";
+import { adminKey, lnbitsUrl } from "../env.js";
 import { paths } from "./api.js";
 
+const fixedUrl = lnbitsUrl.replace(/\/$/, "");
+console.log(`Using lnbits ${fixedUrl}`);
+
 const lnbits = createClient<paths>({
-  baseUrl: lnbitsUrl,
+  baseUrl: fixedUrl,
 });
 
 export default lnbits;

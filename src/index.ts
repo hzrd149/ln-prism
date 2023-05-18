@@ -60,3 +60,6 @@ process.on("SIGINT", () => {
 process.on("SIGTERM", () => {
   process.exit();
 });
+process.once("SIGUSR2", () => {
+  process.exit();
+});

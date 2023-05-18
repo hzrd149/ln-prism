@@ -1,5 +1,5 @@
 import { nanoid } from "nanoid";
-import { adminKey, publicUrl } from "../env.js";
+import { adminKey, loginPassword } from "../env.js";
 import lnbits from "../lnbits/client.js";
 import { createHash } from "node:crypto";
 import { Split, payoutSplit } from "../splits.js";
@@ -10,12 +10,20 @@ const routes = new Router();
 
 const webhooks = new Map<string, { split: string; amount: number }>();
 
-export async function createInvoiceForSplit(split: Split, amount: number) {
+export async function createInvoiceForSplit(
+  split: Split,
+  amount: number,
+  origin: string
+) {
   const hash = createHash("sha256");
   hash.update(JSON.stringify(split.metadata));
 
   const webhookId = nanoid();
   webhooks.set(webhookId, { split: split.name, amount });
+
+  const encoder = new TextEncoder();
+  const view = encoder.encode(JSON.stringify(split.metadata));
+  const unhashedDescription = Buffer.from(view).toString("hex");
 
   const { data, error } = await lnbits.post("/api/v1/payments", {
     headers: { "X-Api-Key": adminKey },
@@ -23,10 +31,11 @@ export async function createInvoiceForSplit(split: Split, amount: number) {
     body: {
       out: false,
       amount,
-      memo: split.name,
+      // memo: split.name,
       internal: false,
       description_hash: hash.digest("hex"),
-      webhook: new URL(`/invoice/paid/${webhookId}`, publicUrl).toString(),
+      unhashed_description: unhashedDescription,
+      webhook: new URL(`/invoice/paid/${webhookId}`, origin).toString(),
     },
   });
   if (error) {
@@ -61,7 +70,10 @@ routes.get(
     const split = ctx.state.split;
 
     ctx.body = {
-      callback: new URL(`/lnurlp-callback/${split.name}`, publicUrl).toString(),
+      callback: new URL(
+        `/lnurlp-callback/${split.name}`,
+        ctx.state.publicUrl
+      ).toString(),
       maxSendable: milisats(100000),
       minSendable: milisats(split.payouts.length * 2),
       metadata: JSON.stringify(split.metadata),
@@ -85,7 +97,8 @@ routes.get("/lnurlp-callback/:splitId", async (ctx) => {
   try {
     const { payment_request, payment_hash } = await createInvoiceForSplit(
       split,
-      amount
+      amount,
+      ctx.state.publicUrl
     );
     ctx.body = {
       pr: payment_request,

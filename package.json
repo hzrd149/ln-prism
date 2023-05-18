@@ -8,7 +8,7 @@
   "scripts": {
     "generate-types": "openapi-typescript https://legend.lnbits.com/openapi.json -o src/lnbits/api.ts",
     "build": "tsc",
-    "dev": "yarn build --watch & nodemon --watch build node build/index.js",
+    "dev": "node development.mjs",
     "format": "prettier -w . --ignore-path .gitignore",
     "start": "node build/index.js"
   },
@@ -39,6 +39,8 @@
     "nodemon": "^2.0.22",
     "openapi-typescript": "^6.2.4",
     "prettier": "^2.8.8",
+    "shelljs": "^0.8.5",
+    "tunnelmole": "^2.1.10",
     "typescript": "^5.0.4"
   },
   "files": [

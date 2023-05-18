@@ -39,4 +39,3 @@ jobs:
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           labels: ${{ steps.meta.outputs.labels }}
-          # platform: linux/amd64,linux/arm64,linux/arm/v7
