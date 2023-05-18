@@ -8,7 +8,7 @@ routes.get("/", (ctx) => ctx.render("index"));
 routes.get("/split/:splitId", async (ctx) => {
   await ctx.render("split/index", {
     ogImage: new URL(
-      `/qr?data=${ctx.state.splitAddress}&border=18`,
+      `/qr?data=${ctx.state.splitAddress}&border=18&format=png`,
       ctx.state.publicUrl
     ),
   });
