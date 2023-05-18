@@ -2,6 +2,7 @@ import lnbits from "./lnbits/client.js";
 import { adminKey } from "./env.js";
 import { LNURLPayMetadata } from "./types.js";
 import { loadSplit, saveSplit } from "./db.js";
+import { milisats } from "./helpers.js";
 
 function humanFriendlyId(size: number) {
   const parts = "abcdefghijklmnopqrstuvqwxyz0123456789";
@@ -11,6 +12,14 @@ function humanFriendlyId(size: number) {
   }
   return id;
 }
+
+type LNURLpMetadata = {
+  callback: string;
+  maxSendable: number;
+  minSendable: number;
+  metadata: string;
+  tag: "payRequest";
+};
 
 export type Split = {
   name: string;
@@ -47,12 +56,32 @@ export async function payoutSplit(id: string, amount: number) {
 
     let [name, domain] = address.split("@");
     const lnurl = `https://${domain}/.well-known/lnurlp/${name}`;
-    const metadata = await fetch(lnurl).then((res) => res.json());
-    const callbackUrl = new URL(metadata.callback);
-    callbackUrl.searchParams.append("amount", String(payoutAmount * 1000));
-    const { pr: payRequest } = await fetch(callbackUrl).then((res) =>
+    const metadata = (await fetch(lnurl).then((res) =>
       res.json()
-    );
+    )) as LNURLpMetadata;
+
+    if (metadata.minSendable && milisats(payoutAmount) < metadata.minSendable) {
+      console.log("Cant send payment: amount lower than minSendable");
+      continue;
+    }
+    if (metadata.maxSendable && milisats(payoutAmount) > metadata.maxSendable) {
+      console.log("Cant send payment: amount greater than maxSendable");
+      continue;
+    }
+
+    const callbackUrl = new URL(metadata.callback);
+    callbackUrl.searchParams.append("amount", String(milisats(payoutAmount)));
+    const {
+      pr: payRequest,
+      status,
+      reason,
+    } = await fetch(callbackUrl).then((res) => res.json());
+
+    if (status === "ERROR") {
+      console.log("Failed to create invoice: " + reason);
+      continue;
+    }
+
     console.log("invoice", payRequest);
     const { error, data } = await lnbits.post("/api/v1/payments", {
       headers: {
