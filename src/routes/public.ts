@@ -5,7 +5,14 @@ const routes = new Router();
 
 routes.get("/", (ctx) => ctx.render("index"));
 
-routes.get("/split/:splitId", async (ctx) => ctx.render("split/index"));
+routes.get("/split/:splitId", async (ctx) => {
+  await ctx.render("split/index", {
+    ogImage: new URL(
+      `/qr?data=${ctx.state.splitAddress}&border=18`,
+      ctx.state.publicUrl
+    ),
+  });
+});
 
 routes.get("/split/:splitId/invoice", async (ctx) => {
   const amount = Math.round(parseInt(ctx.query.amount as string));

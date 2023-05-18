@@ -6,6 +6,12 @@ export function setupParams(router: Router) {
     ctx.state.path = ctx.path;
     ctx.state.publicDomain = ctx.hostname;
     ctx.state.publicUrl = "https://" + ctx.hostname;
+
+    ctx.state.ogTitle = "LN Address Splitter";
+    ctx.state.ogDescription = "A lightning address that splits payments";
+    ctx.state.ogUrl = ctx.state.publicUrl;
+    ctx.state.ogImage = new URL("/icon.svg", ctx.origin);
+
     return next();
   });
 

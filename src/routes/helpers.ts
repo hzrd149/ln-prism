@@ -7,7 +7,7 @@ const routes = new Router();
 routes.get("qr", "/qr", async (ctx) => {
   let lightColor = "white";
   let darkColor = "black";
-  let border = 2;
+  let border = parseInt((ctx.query.border as string) ?? "2");
   let qrcode = QrCode.encodeText(ctx.query.data as string, Ecc.MEDIUM);
   let size = qrcode.size + border * 2;
 
