@@ -4,10 +4,10 @@
 
 ```mermaid
 flowchart TD
-    A[LN address] -->|LNRUL pay| C{Splitter}
-    C -->|20%| D[LN address]
-    C -->|20%| E[LN address]
-    C -->|50%| F[LN address]
+    A["test@split.example.com"] -->|LNRUL pay| C{Splitter}
+    C -->|25%| D["bob@getalby.com"]
+    C -->|25%| E["joe@walletofsatoshi.com"]
+    C -->|50%| F["guy@strike.army"]
 ```
 
 ## Setting up a reverse proxy
