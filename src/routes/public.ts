@@ -1,11 +1,13 @@
-import { router } from "./router.js";
 import { createInvoiceForSplit } from "./lnurl.js";
+import Router from "@koa/router";
 
-router.get("/", (ctx) => ctx.render("index"));
+const routes = new Router();
 
-router.get("/split/:splitId", async (ctx) => ctx.render("split/index"));
+routes.get("/", (ctx) => ctx.render("index"));
 
-router.get("/split/:splitId/invoice", async (ctx) => {
+routes.get("/split/:splitId", async (ctx) => ctx.render("split/index"));
+
+routes.get("/split/:splitId/invoice", async (ctx) => {
   const amount = Math.round(parseInt(ctx.query.amount as string));
   if (!amount) throw new Error("missing amount");
   const { payment_request, payment_hash } = await createInvoiceForSplit(
@@ -18,3 +20,5 @@ router.get("/split/:splitId/invoice", async (ctx) => {
     hash: payment_hash,
   });
 });
+
+export default routes;

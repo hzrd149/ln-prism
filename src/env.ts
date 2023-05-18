@@ -8,3 +8,5 @@ export const adminKey = process.env.ADMIN_KEY || missing("ADMIN_KEY");
 export const publicUrl = process.env.PUBLIC_URL || missing("PUBLIC_URL");
 export const publicDomain = new URL(publicUrl).hostname;
 export const lnbitsUrl = process.env.LNBITS_URL || missing("LNBITS_URL");
+export const loginUser = process.env.LOGIN_USER;
+export const loginPassword = process.env.LOGIN_PASSWORD;

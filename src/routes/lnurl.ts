@@ -1,11 +1,12 @@
 import { nanoid } from "nanoid";
 import { adminKey, publicUrl } from "../env.js";
 import lnbits from "../lnbits/client.js";
-import { router } from "./router.js";
 import { createHash } from "node:crypto";
 import { Split, payoutSplit } from "../splits.js";
 import { milisats } from "../helpers.js";
-import { loadSplit } from "../db.js";
+import Router from "@koa/router";
+
+const routes = new Router();
 
 const webhooks = new Map<string, { split: string; amount: number }>();
 
@@ -39,7 +40,7 @@ export async function createInvoiceForSplit(split: Split, amount: number) {
   };
 }
 
-router.all("/invoice/paid/:webhookId", async (ctx) => {
+routes.all("/invoice/paid/:webhookId", async (ctx) => {
   const id = ctx.params.webhookId as string;
   if (!webhooks.has(id)) return;
   try {
@@ -53,7 +54,7 @@ router.all("/invoice/paid/:webhookId", async (ctx) => {
   }
 });
 
-router.get(
+routes.get(
   ["/lnurlp/:splitId", "/.well-known/lnurlp/:splitId"],
   async (ctx) => {
     console.log(ctx.path, ctx.params);
@@ -69,7 +70,7 @@ router.get(
   }
 );
 
-router.get("/lnurlp-callback/:splitId", async (ctx) => {
+routes.get("/lnurlp-callback/:splitId", async (ctx) => {
   console.log(ctx.path, ctx.params, ctx.query);
   const split = ctx.state.split;
   const amount = Math.round(parseInt(ctx.query.amount as string) / 1000);
@@ -100,3 +101,5 @@ router.get("/lnurlp-callback/:splitId", async (ctx) => {
     return;
   }
 });
+
+export default routes;

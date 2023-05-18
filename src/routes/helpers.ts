@@ -1,8 +1,10 @@
+import Router from "@koa/router";
 import { drawSvgPath } from "../helpers/qrcode.js";
 import { Ecc, QrCode } from "../lib/qrcodegen.js";
-import { router } from "./router.js";
 
-router.get("/qr", async (ctx) => {
+const routes = new Router();
+
+routes.get("qr", "/qr", async (ctx) => {
   let lightColor = "white";
   let darkColor = "black";
   let border = 2;
@@ -24,3 +26,5 @@ router.get("/qr", async (ctx) => {
   `.trim();
   ctx.response.set("content-type", "image/svg+xml");
 });
+
+export default routes;
