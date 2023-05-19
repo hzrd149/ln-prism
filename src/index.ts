@@ -12,6 +12,8 @@ import adminRoutes from "./routes/admin.js";
 import lnurlRoutes from "./routes/lnurl.js";
 import { setupParams } from "./routes/params.js";
 import Router from "@koa/router";
+import { payNextPayout } from "./splits.js";
+import { db } from "./db.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -54,12 +56,19 @@ app.use(router.routes()).use(router.allowedMethods());
 
 app.listen(3000);
 
-process.on("SIGINT", () => {
+setInterval(async () => {
+  await payNextPayout();
+}, 1000 * 2);
+
+setInterval(() => {
+  db.write();
+}, 1000 * 10);
+
+async function shutdown() {
+  console.log("saving database");
+  await db.write();
   process.exit();
-});
-process.on("SIGTERM", () => {
-  process.exit();
-});
-process.once("SIGUSR2", () => {
-  process.exit();
-});
+}
+process.on("SIGINT", shutdown);
+process.on("SIGTERM", shutdown);
+process.once("SIGUSR2", shutdown);

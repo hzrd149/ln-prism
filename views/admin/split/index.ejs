@@ -27,7 +27,7 @@
       <td>
         <a
           href="<%- path %>/remove/<%- address %>"
-          class="button button-outline button-red"
+          class="button button-outline button-red mb-0"
           >Remove</a
         >
       </td>
@@ -44,7 +44,6 @@
   <div style="flex: 1 0">
     <h3>LNURL</h3>
     <code><%- splitLnurlp %></code>
-    <!-- <div class="button button-outline">Copy</div> -->
     <br />
     <a href="<%- splitLnurlp %>" target="_blank">
       <img
@@ -57,7 +56,6 @@
   <div style="flex: 1 0">
     <h3>LN Address</h3>
     <code><%- splitAddress %></code>
-    <!-- <div class="button button-outline">Copy</div> -->
     <br />
     <a href="lightning:<%- splitAddress %>" target="_blank">
       <img
@@ -68,3 +66,31 @@
     </a>
   </div>
 </div>
+
+<% if (failedPayouts.length>0) { %>
+<h3>Failed payouts</h3>
+
+<table>
+  <thead>
+    <tr>
+      <th>Address</th>
+      <th>Amount</th>
+      <th>Reason</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% failedPayouts.forEach((payout) => { %>
+    <tr>
+      <td><%- payout.address %></td>
+      <td><%- payout.amount %> sats</td>
+      <td><%- payout.failed %></td>
+    </tr>
+    <% }) %>
+  </tbody>
+</table>
+
+<details>
+  <summary>Raw JSON</summary>
+  <pre><%- JSON.stringify(failedPayouts, null, 2) %></pre>
+</details>
+<% } %>

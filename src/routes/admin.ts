@@ -1,5 +1,5 @@
 import Router from "@koa/router";
-import { deleteSplit, listSplits, loadSplit, saveSplit } from "../db.js";
+import { db } from "../db.js";
 import { isValidAddress } from "../helpers/ln-address.js";
 import { Split, createSplit } from "../splits.js";
 import { loginPassword, loginUser } from "../env.js";
@@ -13,14 +13,14 @@ if (loginUser && loginPassword) {
 }
 
 routes.get("/admin", async (ctx) => {
-  const splits = await listSplits();
+  const splits = Array.from(Object.values(db.data.splits));
   await ctx.render("admin/index", { splits });
 });
 
 routes.get("/admin/create", (ctx) => ctx.render("admin/create"));
 routes.post("/admin/create", async (ctx) => {
   const name = ctx.request.body.name;
-  if (await loadSplit(name)) {
+  if (db.data.splits[name]) {
     throw new Error("a split with that name already exists");
   }
 
@@ -37,6 +37,9 @@ routes.get("/admin/split/:splitId", (ctx, next) => {
 routes.get("/admin/split/:splitId", (ctx) => {
   return ctx.render("admin/split/index", {
     totalWeight: ctx.state.split.payouts.reduce((v, p) => v + p[1], 0),
+    failedPayouts: db.data.pendingPayouts.filter(
+      (p) => p.failed && p.split === ctx.state.split.name
+    ),
   });
 });
 
@@ -45,7 +48,8 @@ routes.get("/admin/split/:splitId/delete", (ctx) =>
   ctx.render("admin/split/delete")
 );
 routes.post("/admin/split/:splitId/delete", async (ctx) => {
-  await deleteSplit(ctx.state.split.name);
+  delete db.data.splits[ctx.state.split.name];
+
   await ctx.redirect("/admin");
 });
 
@@ -73,8 +77,6 @@ routes.post("/admin/split/:splitId/add", async (ctx) => {
     split.payouts.push([address, weight]);
   }
 
-  await saveSplit(split);
-
   await ctx.redirect(`/admin/split/${split.name}`);
 });
 
@@ -85,7 +87,7 @@ routes.get("/admin/split/:splitId/remove/:address", async (ctx) => {
 routes.post("/admin/split/:splitId/remove/:address", async (ctx) => {
   const split = ctx.state.split;
   split.payouts = split.payouts.filter((p) => p[0] !== ctx.params.address);
-  await saveSplit(split);
+
   await ctx.redirect(`/admin/split/${split.name}`);
 });
 

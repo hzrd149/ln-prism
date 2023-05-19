@@ -25,6 +25,7 @@
     "lowdb": "^6.0.1",
     "milligram": "^1.4.1",
     "nanoid": "^4.0.2",
+    "nconf": "^0.12.0",
     "openapi-fetch": "^0.1.4",
     "pngjs": "^7.0.0"
   },
@@ -37,6 +38,7 @@
     "@types/koa-static": "^4.0.2",
     "@types/koa__cors": "^4.0.0",
     "@types/koa__router": "^12.0.0",
+    "@types/nconf": "^0.10.3",
     "@types/pngjs": "^6.0.1",
     "nodemon": "^2.0.22",
     "openapi-typescript": "^6.2.4",

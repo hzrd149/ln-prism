@@ -1,25 +1,29 @@
 import { nanoid } from "nanoid";
-import { adminKey, loginPassword } from "../env.js";
+import { adminKey } from "../env.js";
 import lnbits from "../lnbits/client.js";
 import { createHash } from "node:crypto";
-import { Split, payoutSplit } from "../splits.js";
+import { Split, createPayouts } from "../splits.js";
 import { milisats } from "../helpers.js";
 import Router from "@koa/router";
 
 const routes = new Router();
 
-const webhooks = new Map<string, { split: string; amount: number }>();
+const webhooks = new Map<
+  string,
+  { split: string; amount: number; comment?: string }
+>();
 
 export async function createInvoiceForSplit(
   split: Split,
   amount: number,
-  origin: string
+  origin: string,
+  comment?: string
 ) {
   const hash = createHash("sha256");
   hash.update(JSON.stringify(split.metadata));
 
   const webhookId = nanoid();
-  webhooks.set(webhookId, { split: split.name, amount });
+  webhooks.set(webhookId, { split: split.name, amount, comment });
 
   const encoder = new TextEncoder();
   const view = encoder.encode(JSON.stringify(split.metadata));
@@ -38,9 +42,7 @@ export async function createInvoiceForSplit(
       webhook: new URL(`/invoice/paid/${webhookId}`, origin).toString(),
     },
   });
-  if (error) {
-    throw new Error("failed to create invoice: " + error.detail);
-  }
+  if (error) throw new Error("failed to create invoice: " + error.detail);
 
   return data as {
     payment_request: string;
@@ -50,23 +52,22 @@ export async function createInvoiceForSplit(
 }
 
 routes.all("/invoice/paid/:webhookId", async (ctx) => {
+  console.log(ctx.path);
+
   const id = ctx.params.webhookId as string;
   if (!webhooks.has(id)) return;
-  try {
-    const { split, amount } = webhooks.get(id);
-    await payoutSplit(split, amount);
-    ctx.body = "success";
-  } catch (e) {
-    console.log("Failed to payout split");
-    console.log(e);
-    ctx.body = "failed";
-  }
+
+  const { split, amount, comment } = webhooks.get(id);
+  console.log(`Received ${amount} sats on ${split}`);
+
+  await createPayouts(split, amount, comment);
+  ctx.body = "success";
 });
 
 routes.get(
   ["/lnurlp/:splitId", "/.well-known/lnurlp/:splitId"],
   async (ctx) => {
-    console.log(ctx.path, ctx.params);
+    console.log(ctx.path);
     const split = ctx.state.split;
 
     ctx.body = {
@@ -83,10 +84,10 @@ routes.get(
 );
 
 routes.get("/lnurlp-callback/:splitId", async (ctx) => {
-  console.log(ctx.path, ctx.params, ctx.query);
+  console.log(ctx.path);
   const split = ctx.state.split;
   const amount = Math.round(parseInt(ctx.query.amount as string) / 1000);
-  // const comment = ctx.query.comment as string;
+  const comment = ctx.query.comment as string | undefined;
 
   if (!Number.isFinite(amount)) {
     ctx.body = { status: "ERROR", reason: "missing amount" };
@@ -98,7 +99,8 @@ routes.get("/lnurlp-callback/:splitId", async (ctx) => {
     const { payment_request, payment_hash } = await createInvoiceForSplit(
       split,
       amount,
-      ctx.state.publicUrl
+      ctx.state.publicUrl,
+      comment
     );
     ctx.body = {
       pr: payment_request,

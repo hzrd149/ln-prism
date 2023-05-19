@@ -1,5 +1,5 @@
 import Router from "@koa/router";
-import { loadSplit } from "../db.js";
+import { db } from "../db.js";
 
 export function setupParams(router: Router) {
   router.use((ctx, next) => {
@@ -16,7 +16,7 @@ export function setupParams(router: Router) {
   });
 
   router.param("splitId", async (name, ctx, next) => {
-    const split = await loadSplit(name);
+    const split = db.data.splits[name];
 
     if (!split) {
       ctx.body = "no split with name " + name;
