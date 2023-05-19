@@ -15,6 +15,7 @@
       <th>Address</th>
       <th>Weight</th>
       <th>Percent</th>
+      <th>Average Fee</th>
       <th></th>
     </tr>
   </thead>
@@ -24,6 +25,9 @@
       <td><%- address %></td>
       <td><%- weight %></td>
       <td><%- ((weight/totalWeight)*100).toFixed(2) %>%</td>
+      <td>
+        <%- feeGuesstimate[address]?feeGuesstimate[address]/1000:'unknown' %>
+      </td>
       <td>
         <a
           href="<%- path %>/remove/<%- address %>"
@@ -88,9 +92,4 @@
     <% }) %>
   </tbody>
 </table>
-
-<details>
-  <summary>Raw JSON</summary>
-  <pre><%- JSON.stringify(failedPayouts, null, 2) %></pre>
-</details>
 <% } %>

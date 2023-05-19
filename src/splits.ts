@@ -1,17 +1,9 @@
 import lnbits from "./lnbits/client.js";
-import { adminKey } from "./env.js";
+import { adminKey, lnbitsUrl } from "./env.js";
 import { LNURLPayMetadata } from "./types.js";
 import { db } from "./db.js";
 import { milisats } from "./helpers.js";
-
-function humanFriendlyId(size: number) {
-  const parts = "abcdefghijklmnopqrstuvqwxyz0123456789";
-  var id = "";
-  while (id.length < size) {
-    id += parts[Math.floor(Math.random() * parts.length)];
-  }
-  return id;
-}
+import { nanoid } from "nanoid";
 
 type LNURLpMetadata = {
   callback: string;
@@ -73,6 +65,11 @@ export async function createPayouts(
   }
 }
 
+const webhooks = new Map<
+  string,
+  { payout: AddressPayout; paymentHash: string }
+>();
+
 export async function payNextPayout() {
   const payout = db.data.pendingPayouts.find((p) => !p.failed);
   if (!payout) return;
@@ -85,12 +82,62 @@ export async function payNextPayout() {
   );
 
   try {
-    await payAddress(
-      payout.address,
-      payout.amount,
-      `${payout.split} ${payout.weight}`,
-      payout.comment
-    );
+    const msatAmount = milisats(payout.amount);
+
+    let [name, domain] = payout.address.split("@");
+    const lnurl = `https://${domain}/.well-known/lnurlp/${name}`;
+
+    const metadata = (await fetch(lnurl).then((res) =>
+      res.json()
+    )) as LNURLpMetadata;
+
+    if (metadata.minSendable && msatAmount < metadata.minSendable)
+      throw new Error("Cant send payment: amount lower than minSendable");
+    if (metadata.maxSendable && msatAmount > metadata.maxSendable)
+      throw new Error("Cant send payment: amount greater than maxSendable");
+
+    const callbackUrl = new URL(metadata.callback);
+    callbackUrl.searchParams.append("amount", String(msatAmount));
+
+    if (metadata.commentAllowed && payout.comment) {
+      if (payout.comment.length > metadata.commentAllowed)
+        throw new Error("comment too long");
+      callbackUrl.searchParams.append("comment", payout.comment);
+    }
+
+    const {
+      pr: payRequest,
+      status,
+      reason,
+    } = await fetch(callbackUrl).then((res) => res.json());
+
+    if (status === "ERROR") throw new Error(reason);
+
+    const invoiceId = nanoid();
+    const { error, data } = await lnbits.post("/api/v1/payments", {
+      headers: {
+        "X-Api-Key": adminKey,
+      },
+      params: {},
+      body: {
+        out: true,
+        memo: `${payout.split} ${payout.weight}`,
+        bolt11: payRequest,
+        // webhook: new URL(`/webhook/out/${invoiceId}`, webhookUrl).toString(),
+      },
+    });
+
+    if (error) throw new Error("Failed to create invoice");
+    const result = data as { payment_hash: string; checking_id: string };
+
+    webhooks.set(invoiceId, {
+      payout,
+      paymentHash: result.payment_hash,
+    });
+
+    await handleWebhook(invoiceId);
+
+    return result.payment_hash;
   } catch (e) {
     if (e instanceof Error) {
       console.log("Failed:", e.message);
@@ -104,59 +151,38 @@ export async function payNextPayout() {
   }
 }
 
-async function payAddress(
-  address: string,
-  amount: number,
-  memo: string,
-  comment?: string
-) {
-  const msatAmount = milisats(amount);
+type PaymentDetails = {
+  paid: boolean;
+  preimage: string;
+  details: {
+    checking_id: string;
+    pending: boolean;
+    amount: number;
+    fee: number;
+    payment_hash: string;
+    wallet_id: string;
+  };
+};
 
-  let [name, domain] = address.split("@");
-  const lnurl = `https://${domain}/.well-known/lnurlp/${name}`;
+export async function handleWebhook(id: string) {
+  const webhook = webhooks.get(id);
+  if (!webhook) return;
 
-  const metadata = (await fetch(lnurl).then((res) =>
-    res.json()
-  )) as LNURLpMetadata;
+  const { paymentHash, payout } = webhook;
 
-  if (metadata.minSendable && msatAmount < metadata.minSendable)
-    throw new Error("Cant send payment: amount lower than minSendable");
-  if (metadata.maxSendable && msatAmount > metadata.maxSendable)
-    throw new Error("Cant send payment: amount greater than maxSendable");
+  console.log(`Checking fees for ${paymentHash}`);
 
-  const callbackUrl = new URL(metadata.callback);
-  callbackUrl.searchParams.append("amount", String(msatAmount));
+  const url = new URL(`/api/v1/payments/${paymentHash}`, lnbitsUrl);
+  const details = (await fetch(url, {
+    headers: { "X-Api-Key": adminKey },
+  }).then((res) => res.json())) as PaymentDetails;
 
-  if (metadata.commentAllowed && comment) {
-    if (comment.length > metadata.commentAllowed)
-      throw new Error("comment too long");
-    callbackUrl.searchParams.append("comment", comment);
-  }
+  db.data.addressFees[payout.address] =
+    db.data.addressFees[payout.address] || [];
 
-  const {
-    pr: payRequest,
-    status,
-    reason,
-  } = await fetch(callbackUrl).then((res) => res.json());
+  db.data.addressFees[payout.address].push(details.details.fee);
 
-  if (status === "ERROR") throw new Error(reason);
+  console.log("Fee: " + details.details.fee);
 
-  const { error, data } = await lnbits.post("/api/v1/payments", {
-    headers: {
-      "X-Api-Key": adminKey,
-    },
-    params: {},
-    body: {
-      out: true,
-      memo,
-      bolt11: payRequest,
-    },
-  });
-
-  if (error) throw new Error("failed to create invoice");
-
-  const result = data as { payment_hash: string; checking_id: string };
-  console.log(result.payment_hash);
-
-  return data;
+  webhooks.delete(id);
 }

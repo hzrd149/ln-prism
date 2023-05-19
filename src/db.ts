@@ -24,8 +24,11 @@ const adapter = new JSONFile<Schema>(file);
 const defaultData: Schema = { splits: {}, addressFees: {}, pendingPayouts: [] };
 const db = new Low(adapter, defaultData);
 
-// Read data from JSON file, this will set db.data content
-// If JSON file doesn't exist, defaultData is used instead
 await db.read();
+
+// ensure all fields are present
+db.data.splits = db.data.splits || {};
+db.data.addressFees = db.data.addressFees || {};
+db.data.pendingPayouts = db.data.pendingPayouts || [];
 
 export { db };

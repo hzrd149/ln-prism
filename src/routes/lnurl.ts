@@ -39,7 +39,7 @@ export async function createInvoiceForSplit(
       internal: false,
       description_hash: hash.digest("hex"),
       unhashed_description: unhashedDescription,
-      webhook: new URL(`/invoice/paid/${webhookId}`, origin).toString(),
+      webhook: new URL(`/webhook/in/${webhookId}`, origin).toString(),
     },
   });
   if (error) throw new Error("failed to create invoice: " + error.detail);
@@ -51,7 +51,7 @@ export async function createInvoiceForSplit(
   };
 }
 
-routes.all("/invoice/paid/:webhookId", async (ctx) => {
+routes.all("/webhook/in/:webhookId", async (ctx) => {
   console.log(ctx.path);
 
   const id = ctx.params.webhookId as string;

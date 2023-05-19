@@ -11,6 +11,7 @@ import helperRoutes from "./routes/helpers.js";
 import adminRoutes from "./routes/admin.js";
 import lnurlRoutes from "./routes/lnurl.js";
 import { setupParams } from "./routes/params.js";
+import webhookRoutes from "./routes/webhooks.js";
 import Router from "@koa/router";
 import { payNextPayout } from "./splits.js";
 import { db } from "./db.js";
@@ -51,6 +52,7 @@ router.use(publicRoutes.routes(), publicRoutes.allowedMethods());
 router.use(helperRoutes.routes(), helperRoutes.allowedMethods());
 router.use(lnurlRoutes.routes(), lnurlRoutes.allowedMethods());
 router.use(adminRoutes.routes(), adminRoutes.allowedMethods());
+router.use(webhookRoutes.routes(), webhookRoutes.allowedMethods());
 
 app.use(router.routes()).use(router.allowedMethods());
 
