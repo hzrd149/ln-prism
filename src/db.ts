@@ -1,8 +1,8 @@
 import { resolve, isAbsolute } from "node:path";
-import { AddressPayout, Split } from "./splits.js";
 
 import { Low } from "lowdb";
 import { JSONFile } from "lowdb/node";
+import { LNURLPayMetadata } from "./types.js";
 
 if (!process.env.DB_PATH) throw new Error("missing DB_PATH");
 
@@ -12,6 +12,25 @@ const file = isAbsolute(process.env.DB_PATH)
   : resolve(process.cwd(), process.env.DB_PATH);
 
 console.log(`Using ${file}`);
+
+export type SplitTarget = {
+  address: string;
+  weight: number;
+  minSendable: number;
+  maxSendable: number;
+};
+export type Split = {
+  name: string;
+  payouts: SplitTarget[];
+};
+export type AddressPayout = {
+  address: string;
+  split: string;
+  amount: number;
+  weight: number;
+  comment?: string;
+  failed?: string;
+};
 
 type Schema = {
   splits: Record<string, Split>;

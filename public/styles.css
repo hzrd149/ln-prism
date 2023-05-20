@@ -8,6 +8,10 @@ body {
   overflow-y: auto;
 }
 
+h1 {
+  font-size: 4rem;
+}
+
 .card-grid {
   display: flex;
   flex-wrap: wrap;

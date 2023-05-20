@@ -1,11 +1,12 @@
 import lnbits from "./lnbits/client.js";
 import { adminKey, lnbitsUrl } from "./env.js";
-import { LNURLPayMetadata } from "./types.js";
-import { db } from "./db.js";
-import { milisats } from "./helpers.js";
+import { AddressPayout, Split, SplitTarget, db } from "./db.js";
+import { satsToMsats, roundToSats, msatsToSats } from "./helpers.js";
 import { nanoid } from "nanoid";
+import { estimatedFee } from "./helpers/ln-address.js";
+import { LNURLPayMetadata } from "./types.js";
 
-type LNURLpMetadata = {
+type LNURLpayRequest = {
   callback: string;
   maxSendable: number;
   minSendable: number;
@@ -14,30 +15,52 @@ type LNURLpMetadata = {
   commentAllowed?: number;
 };
 
-export type Split = {
-  name: string;
-  payouts: [string, number][];
-  metadata: LNURLPayMetadata;
-};
-export type AddressPayout = {
-  address: string;
-  split: string;
-  amount: number;
-  weight: number;
-  comment?: string;
-  failed?: string;
-};
-
-export async function createSplit(name: string, payouts: [string, number][]) {
+export async function createSplit(name: string) {
   const split: Split = {
     name,
-    payouts,
-    metadata: [["text/plain", `Split: ${name}`]],
+    payouts: [],
   };
 
   db.data.splits[name] = split;
 
   return split;
+}
+
+export function getMinSendable(split: Split) {
+  const payoutMinSendableTotal = split.payouts.reduce(
+    (t, p) => t + p.minSendable + estimatedFee(p.address),
+    0
+  );
+  return roundToSats(payoutMinSendableTotal);
+}
+export function getMaxSendable(split: Split) {
+  return satsToMsats(100000); // 100,000 sats
+}
+
+export async function createSplitTarget(
+  address: string,
+  weight: number
+): Promise<SplitTarget> {
+  const [name, host] = address.split("@");
+  const lnurl = new URL(`/.well-known/lnurlp/${name}`, "https://" + host);
+
+  const metadata = (await fetch(lnurl).then((res) =>
+    res.json()
+  )) as LNURLpayRequest;
+
+  return {
+    address,
+    weight,
+    minSendable: metadata.minSendable ?? 1000, //default to 1 sat
+    maxSendable: metadata.maxSendable ?? 100000 * 1000, //default to 100,000 sats
+  };
+}
+
+export function getLNURLpMetadata(
+  split: Split,
+  hostname: string
+): LNURLPayMetadata {
+  return [["text/plain", split.name + "@" + hostname]];
 }
 
 export async function createPayouts(
@@ -48,10 +71,14 @@ export async function createPayouts(
   const split = db.data.splits[name];
   if (!split) throw new Error(`no split: ${name}`);
 
-  const totalWeight = split.payouts.reduce((v, [_a, w]) => v + w, 0);
+  const totalWeight = split.payouts.reduce(
+    (total, { weight }) => total + weight,
+    0
+  );
 
-  for (const [address, weight] of split.payouts) {
-    const payoutAmount = Math.floor((weight / totalWeight) * amount);
+  for (const { address, weight } of split.payouts) {
+    const fee = estimatedFee(address);
+    const payoutAmount = roundToSats((weight / totalWeight) * amount - fee);
 
     const payout: AddressPayout = {
       address,
@@ -78,26 +105,26 @@ export async function payNextPayout() {
   if (idx > -1) db.data.pendingPayouts.splice(idx, 1);
 
   console.log(
-    `Paying ${payout.address} from split ${payout.split} ${payout.amount} sats`
+    `Paying ${payout.address} from split ${payout.split} ${msatsToSats(
+      payout.amount
+    )} sats`
   );
 
   try {
-    const msatAmount = milisats(payout.amount);
-
     let [name, domain] = payout.address.split("@");
     const lnurl = `https://${domain}/.well-known/lnurlp/${name}`;
 
     const metadata = (await fetch(lnurl).then((res) =>
       res.json()
-    )) as LNURLpMetadata;
+    )) as LNURLpayRequest;
 
-    if (metadata.minSendable && msatAmount < metadata.minSendable)
+    if (metadata.minSendable && payout.amount < metadata.minSendable)
       throw new Error("Cant send payment: amount lower than minSendable");
-    if (metadata.maxSendable && msatAmount > metadata.maxSendable)
+    if (metadata.maxSendable && payout.amount > metadata.maxSendable)
       throw new Error("Cant send payment: amount greater than maxSendable");
 
     const callbackUrl = new URL(metadata.callback);
-    callbackUrl.searchParams.append("amount", String(msatAmount));
+    callbackUrl.searchParams.append("amount", String(payout.amount));
 
     if (metadata.commentAllowed && payout.comment) {
       if (payout.comment.length > metadata.commentAllowed)
@@ -170,8 +197,6 @@ export async function handleWebhook(id: string) {
 
   const { paymentHash, payout } = webhook;
 
-  console.log(`Checking fees for ${paymentHash}`);
-
   const url = new URL(`/api/v1/payments/${paymentHash}`, lnbitsUrl);
   const details = (await fetch(url, {
     headers: { "X-Api-Key": adminKey },
@@ -181,8 +206,6 @@ export async function handleWebhook(id: string) {
     db.data.addressFees[payout.address] || [];
 
   db.data.addressFees[payout.address].push(details.details.fee);
-
-  console.log("Fee: " + details.details.fee);
 
   webhooks.delete(id);
 }

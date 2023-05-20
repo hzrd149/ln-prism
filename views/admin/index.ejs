@@ -5,7 +5,7 @@
     <div class="card-header"><%- split.name %>@<%- publicDomain %></div>
     <div class="card-body">
       <ul style="margin-bottom: 0">
-        <% for( let [address, weight] of split.payouts ) { %>
+        <% for( let {address, weight} of split.payouts ) { %>
         <li style="margin-bottom: 0"><%- address %> <%- weight %></li>
         <% } %>
       </ul>

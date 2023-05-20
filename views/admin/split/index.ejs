@@ -20,13 +20,14 @@
     </tr>
   </thead>
   <tbody>
-    <% split.payouts.forEach(([address, weight]) => { %>
+    <% split.payouts.forEach(({address, weight}) => { %>
     <tr>
       <td><%- address %></td>
       <td><%- weight %></td>
       <td><%- ((weight/totalWeight)*100).toFixed(2) %>%</td>
       <td>
-        <%- feeGuesstimate[address]?feeGuesstimate[address]/1000:'unknown' %>
+        <%- addressAvgFee[address]?addressAvgFee[address]/1000:`unknown (1 sat)`
+        %>
       </td>
       <td>
         <a
@@ -86,10 +87,15 @@
     <% failedPayouts.forEach((payout) => { %>
     <tr>
       <td><%- payout.address %></td>
-      <td><%- payout.amount %> sats</td>
+      <td><%- payout.amount/1000 %> sats</td>
       <td><%- payout.failed %></td>
     </tr>
     <% }) %>
   </tbody>
 </table>
 <% } %>
+
+<details>
+  <summary>Debug</summary>
+  <pre><%- JSON.stringify(split, null, 2) %></pre>
+</details>

@@ -1,4 +1,8 @@
+import { Split } from "../db.js";
+import { satsToMsats, msatsToSats } from "../helpers.js";
+import { estimatedFee } from "../helpers/ln-address.js";
 import { createPngQrCode, createSvgQrCode } from "../helpers/qrcode.js";
+import { getMaxSendable, getMinSendable } from "../splits.js";
 import { createInvoiceForSplit } from "./lnurl.js";
 import Router from "@koa/router";
 
@@ -7,22 +11,26 @@ const routes = new Router();
 routes.get("/", (ctx) => ctx.render("index"));
 
 routes.get("/split/:splitId", async (ctx) => {
+  const split = ctx.state.split as Split;
+
   await ctx.render("split/index", {
-    totalWeight: ctx.state.split.payouts.reduce((v, p) => v + p[1], 0),
+    totalWeight: split.payouts.reduce((v, p) => v + p.weight, 0),
     ogTitle: ctx.state.splitAddress,
-    ogImage: new URL(
-      `/split/${ctx.state.split.name}/address.png`,
-      ctx.state.publicUrl
+    ogImage: new URL(`/split/${split.name}/address.png`, ctx.state.publicUrl),
+    minSendable: msatsToSats(getMinSendable(split)),
+    maxSendable: msatsToSats(getMaxSendable(split)),
+    estimatedFees: msatsToSats(
+      split.payouts.reduce((v, p) => v + estimatedFee(p.address), 0)
     ),
   });
 });
 
 routes.get("/split/:splitId/invoice", async (ctx) => {
-  const amount = Math.round(parseInt(ctx.query.amount as string));
+  const amount = parseInt(ctx.query.amount as string);
   if (!amount) throw new Error("missing amount");
   const { payment_request, payment_hash } = await createInvoiceForSplit(
     ctx.state.split,
-    amount,
+    satsToMsats(amount),
     ctx.state.publicUrl
   );
 

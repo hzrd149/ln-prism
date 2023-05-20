@@ -1,7 +1,7 @@
 import Router from "@koa/router";
-import { db } from "../db.js";
+import { Split, db } from "../db.js";
 import { isValidAddress } from "../helpers/ln-address.js";
-import { Split, createSplit } from "../splits.js";
+import { createSplit, createSplitTarget } from "../splits.js";
 import { loginPassword, loginUser } from "../env.js";
 
 const { default: auth } = await import("koa-basic-auth");
@@ -24,7 +24,7 @@ routes.post("/admin/create", async (ctx) => {
     throw new Error("a split with that name already exists");
   }
 
-  const split = await createSplit(ctx.request.body.name, []);
+  const split = await createSplit(ctx.request.body.name);
 
   ctx.redirect(`/admin/split/${split.name}`);
 });
@@ -36,7 +36,7 @@ routes.get("/admin/split/:splitId", (ctx, next) => {
 
 routes.get("/admin/split/:splitId", (ctx) => {
   return ctx.render("admin/split/index", {
-    totalWeight: ctx.state.split.payouts.reduce((v, p) => v + p[1], 0),
+    totalWeight: ctx.state.split.payouts.reduce((v, p) => v + p.weight, 0),
     failedPayouts: db.data.pendingPayouts.filter(
       (p) => p.failed && p.split === ctx.state.split.name
     ),
@@ -48,7 +48,11 @@ routes.get("/admin/split/:splitId/delete", (ctx) =>
   ctx.render("admin/split/delete")
 );
 routes.post("/admin/split/:splitId/delete", async (ctx) => {
-  delete db.data.splits[ctx.state.split.name];
+  const split = ctx.state.split;
+  delete db.data.splits[split.name];
+  db.data.pendingPayouts = db.data.pendingPayouts.filter(
+    (p) => p.split !== split.name
+  );
 
   await ctx.redirect("/admin");
 });
@@ -60,7 +64,7 @@ routes.post("/admin/split/:splitId/add", async (ctx) => {
   const address = ctx.request.body.address;
   const weight = parseInt(ctx.request.body.weight);
 
-  if (split.payouts.find((p) => p[0] === address)) {
+  if (split.payouts.find((p) => p.address === address)) {
     ctx.body = "That address already exists";
     ctx.status = 409;
     return;
@@ -74,7 +78,8 @@ routes.post("/admin/split/:splitId/add", async (ctx) => {
   }
 
   if (address && weight) {
-    split.payouts.push([address, weight]);
+    const target = await createSplitTarget(address, weight);
+    split.payouts.push(target);
   }
 
   await ctx.redirect(`/admin/split/${split.name}`);
@@ -86,7 +91,7 @@ routes.get("/admin/split/:splitId/remove/:address", async (ctx) => {
 });
 routes.post("/admin/split/:splitId/remove/:address", async (ctx) => {
   const split = ctx.state.split;
-  split.payouts = split.payouts.filter((p) => p[0] !== ctx.params.address);
+  split.payouts = split.payouts.filter((p) => p.address !== ctx.params.address);
 
   await ctx.redirect(`/admin/split/${split.name}`);
 });

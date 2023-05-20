@@ -1,6 +1,6 @@
 import Router from "@koa/router";
 import { db } from "../db.js";
-import { averageFee } from "../helpers/ln-address.js";
+import { averageFee, estimatedFee } from "../helpers/ln-address.js";
 
 export function setupParams(router: Router) {
   router.use((ctx, next) => {
@@ -30,9 +30,13 @@ export function setupParams(router: Router) {
     const url = new URL(`/lnurlp/${split.name}`, ctx.state.publicUrl);
     ctx.state.splitLnurlp = `lnurlp://${url.hostname + url.pathname}`;
 
-    ctx.state.feeGuesstimate = {};
-    for (const [address] of split.payouts) {
-      ctx.state.feeGuesstimate[address] = averageFee(address);
+    ctx.state.addressAvgFee = {};
+    for (const { address } of split.payouts) {
+      ctx.state.addressAvgFee[address] = averageFee(address);
+    }
+    ctx.state.addressEstFee = {};
+    for (const { address } of split.payouts) {
+      ctx.state.addressEstFee[address] = estimatedFee(address);
     }
 
     return next();

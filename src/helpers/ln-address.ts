@@ -13,7 +13,13 @@ export async function isValidAddress(address: string) {
   }
 }
 
-export function averageFee(address: string) {
+export function averageFee(address: string): number | undefined {
   const fees = db.data.addressFees[address] || [];
-  return fees.reduce((t, v) => t + v, 0) / fees.length;
+  if (fees.length === 0) return;
+  const avg = Math.round(fees.reduce((t, v) => t + v, 0) / fees.length);
+  return Number.isFinite(avg) ? avg : undefined;
+}
+
+export function estimatedFee(address: string) {
+  return averageFee(address) ?? 1000;
 }

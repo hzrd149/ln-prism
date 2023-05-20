@@ -1,12 +1,15 @@
 <h1><%- splitAddress %></h1>
 
 <form action="/split/<%- split.name %>/invoice" method="get">
-  <label for="address">Create invoice</label>
+  <label for="address"
+    >Create invoice ( Split fees: <%- estimatedFees %> sats )</label
+  >
   <div class="h-stack">
     <input
       type="number"
       name="amount"
-      min="<%- split.payouts.length*2 %>"
+      min="<%- minSendable %>"
+      max="<%- maxSendable %>"
       step="1"
       placeholder="amount"
       required
@@ -22,14 +25,16 @@
       <th>Address</th>
       <th>Weight</th>
       <th>Percent</th>
+      <th>Estimated Fee</th>
     </tr>
   </thead>
   <tbody>
-    <% split.payouts.forEach(([address, weight]) => { %>
+    <% split.payouts.forEach(({address, weight}) => { %>
     <tr>
       <td><%- address %></td>
       <td><%- weight %></td>
       <td><%- ((weight/totalWeight)*100).toFixed(2) %>%</td>
+      <td><%- addressEstFee[address]/1000 %></td>
     </tr>
     <% }) %>
   </tbody>
