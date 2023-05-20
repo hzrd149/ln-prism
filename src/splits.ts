@@ -61,13 +61,10 @@ export function buildLNURLpMetadata(
 }
 
 export async function createPayouts(
-  name: string,
+  split: Split,
   amount: number,
   comment?: string
 ) {
-  const split = db.data.splits[name];
-  if (!split) throw new Error(`no split: ${name}`);
-
   const totalWeight = split.payouts.reduce(
     (total, { weight }) => total + weight,
     0
@@ -80,7 +77,7 @@ export async function createPayouts(
       address,
       weight,
       amount: payoutAmount,
-      split: name,
+      split: split.name,
       comment,
     };
 

@@ -9,8 +9,9 @@ import {
   getMinSendable,
 } from "../splits.js";
 import Router from "@koa/router";
-import { Split } from "../db.js";
+import { Split, db } from "../db.js";
 import { msatsToSats, roundToSats } from "../helpers.js";
+import { LNURLpayRequest } from "../types.js";
 
 const routes = new Router();
 
@@ -70,10 +71,18 @@ routes.all("/webhook/in/:webhookId", async (ctx) => {
   const id = ctx.params.webhookId as string;
   if (!webhooks.has(id)) return;
 
-  const { split, amount, comment } = webhooks.get(id);
-  console.log(`Received ${msatsToSats(amount)} sats on ${split}`);
+  const { split: splitName, amount, comment } = webhooks.get(id);
 
-  await createPayouts(split, amount, comment);
+  const split = db.data.splits[splitName];
+  if (!split) throw new Error(`unknown split ${splitName}`);
+
+  console.log(`Received ${msatsToSats(amount)} sats on ${splitName}`);
+
+  const fullComment = [split.name + "@" + ctx.hostname, comment]
+    .filter(Boolean)
+    .join("\n");
+
+  await createPayouts(split, amount, fullComment);
   ctx.body = "success";
 });
 
@@ -95,8 +104,9 @@ routes.get(
       minSendable: roundToSats(await getMinSendable(split)),
       maxSendable: roundToSats(await getMaxSendable(split)),
       metadata: JSON.stringify(metadata),
+      commentAllowed: 256,
       tag: "payRequest",
-    };
+    } as LNURLpayRequest;
   }
 );
 
