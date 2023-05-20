@@ -35,10 +35,12 @@ routes.get("/admin/split/:splitId", (ctx, next) => {
 });
 
 routes.get("/admin/split/:splitId", (ctx) => {
+  const split = ctx.state.split as Split;
+
   return ctx.render("admin/split/index", {
-    totalWeight: ctx.state.split.payouts.reduce((v, p) => v + p.weight, 0),
+    totalWeight: split.payouts.reduce((v, p) => v + p.weight, 0),
     failedPayouts: db.data.pendingPayouts.filter(
-      (p) => p.failed && p.split === ctx.state.split.name
+      (p) => p.failed && p.split === split.name
     ),
   });
 });
@@ -48,7 +50,7 @@ routes.get("/admin/split/:splitId/delete", (ctx) =>
   ctx.render("admin/split/delete")
 );
 routes.post("/admin/split/:splitId/delete", async (ctx) => {
-  const split = ctx.state.split;
+  const split = ctx.state.split as Split;
   delete db.data.splits[split.name];
   db.data.pendingPayouts = db.data.pendingPayouts.filter(
     (p) => p.split !== split.name
@@ -90,7 +92,7 @@ routes.get("/admin/split/:splitId/remove/:address", async (ctx) => {
   await ctx.render("admin/split/remove", { address: ctx.params.address });
 });
 routes.post("/admin/split/:splitId/remove/:address", async (ctx) => {
-  const split = ctx.state.split;
+  const split = ctx.state.split as Split;
   split.payouts = split.payouts.filter((p) => p.address !== ctx.params.address);
 
   await ctx.redirect(`/admin/split/${split.name}`);

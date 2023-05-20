@@ -17,8 +17,8 @@ routes.get("/split/:splitId", async (ctx) => {
     totalWeight: split.payouts.reduce((v, p) => v + p.weight, 0),
     ogTitle: ctx.state.splitAddress,
     ogImage: new URL(`/split/${split.name}/address.png`, ctx.state.publicUrl),
-    minSendable: msatsToSats(getMinSendable(split)),
-    maxSendable: msatsToSats(getMaxSendable(split)),
+    minSendable: msatsToSats(await getMinSendable(split)),
+    maxSendable: msatsToSats(await getMaxSendable(split)),
     estimatedFees: msatsToSats(
       split.payouts.reduce((v, p) => v + estimatedFee(p.address), 0)
     ),
