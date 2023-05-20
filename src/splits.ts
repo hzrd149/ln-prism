@@ -3,7 +3,7 @@ import { adminKey, lnbitsUrl } from "./env.js";
 import { AddressPayout, Split, SplitTarget, db } from "./db.js";
 import { satsToMsats, roundToSats, msatsToSats } from "./helpers.js";
 import { nanoid } from "nanoid";
-import { estimatedFee } from "./helpers/ln-address.js";
+import { estimatedFee, getAddressMetadata } from "./helpers/ln-address.js";
 import { LNURLPayMetadata } from "./types.js";
 
 type LNURLpayRequest = {
@@ -26,12 +26,18 @@ export async function createSplit(name: string) {
   return split;
 }
 
-export function getMinSendable(split: Split) {
-  const payoutMinSendableTotal = split.payouts.reduce(
-    (t, p) => t + p.minSendable + estimatedFee(p.address),
-    0
-  );
-  return roundToSats(payoutMinSendableTotal);
+export async function getMinSendable(split: Split) {
+  let minSendable = 0;
+  for (const { address } of split.payouts) {
+    const metadata = await getAddressMetadata(address);
+
+    minSendable += estimatedFee(address);
+    if (metadata.minSendable) {
+      minSendable += metadata.minSendable;
+    }
+  }
+
+  return minSendable;
 }
 export function getMaxSendable(split: Split) {
   return satsToMsats(100000); // 100,000 sats
@@ -41,22 +47,13 @@ export async function createSplitTarget(
   address: string,
   weight: number
 ): Promise<SplitTarget> {
-  const [name, host] = address.split("@");
-  const lnurl = new URL(`/.well-known/lnurlp/${name}`, "https://" + host);
-
-  const metadata = (await fetch(lnurl).then((res) =>
-    res.json()
-  )) as LNURLpayRequest;
-
   return {
     address,
     weight,
-    minSendable: metadata.minSendable ?? 1000, //default to 1 sat
-    maxSendable: metadata.maxSendable ?? 100000 * 1000, //default to 100,000 sats
   };
 }
 
-export function getLNURLpMetadata(
+export function buildLNURLpMetadata(
   split: Split,
   hostname: string
 ): LNURLPayMetadata {
@@ -77,8 +74,7 @@ export async function createPayouts(
   );
 
   for (const { address, weight } of split.payouts) {
-    const fee = estimatedFee(address);
-    const payoutAmount = roundToSats((weight / totalWeight) * amount - fee);
+    const payoutAmount = Math.round((weight / totalWeight) * amount);
 
     const payout: AddressPayout = {
       address,
@@ -104,10 +100,14 @@ export async function payNextPayout() {
   const idx = db.data.pendingPayouts.indexOf(payout);
   if (idx > -1) db.data.pendingPayouts.splice(idx, 1);
 
+  // payout amount - estimated fees and round to the nearest sat (since most LN nodes dont support msats)
+  const estFee = estimatedFee(payout.address);
+  const amount = roundToSats(payout.amount - estFee);
+
   console.log(
-    `Paying ${payout.address} from split ${payout.split} ${msatsToSats(
-      payout.amount
-    )} sats`
+    `Paying ${payout.address} ${msatsToSats(amount)} sats from split "${
+      payout.split
+    }" with estimated fee of ${estFee / 1000} sats`
   );
 
   try {
@@ -118,13 +118,13 @@ export async function payNextPayout() {
       res.json()
     )) as LNURLpayRequest;
 
-    if (metadata.minSendable && payout.amount < metadata.minSendable)
+    if (metadata.minSendable && amount < metadata.minSendable)
       throw new Error("Cant send payment: amount lower than minSendable");
-    if (metadata.maxSendable && payout.amount > metadata.maxSendable)
+    if (metadata.maxSendable && amount > metadata.maxSendable)
       throw new Error("Cant send payment: amount greater than maxSendable");
 
     const callbackUrl = new URL(metadata.callback);
-    callbackUrl.searchParams.append("amount", String(payout.amount));
+    callbackUrl.searchParams.append("amount", String(amount));
 
     if (metadata.commentAllowed && payout.comment) {
       if (payout.comment.length > metadata.commentAllowed)

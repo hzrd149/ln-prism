@@ -4,13 +4,12 @@ import lnbits from "../lnbits/client.js";
 import { createHash } from "node:crypto";
 import {
   createPayouts,
-  getLNURLpMetadata,
+  buildLNURLpMetadata,
   getMaxSendable,
   getMinSendable,
 } from "../splits.js";
 import Router from "@koa/router";
 import { Split } from "../db.js";
-import { LNURLPayMetadata } from "../types.js";
 import { msatsToSats, roundToSats } from "../helpers.js";
 
 const routes = new Router();
@@ -27,7 +26,7 @@ export async function createInvoiceForSplit(
   comment?: string
 ) {
   const hostname = new URL(origin).hostname;
-  const metadata = getLNURLpMetadata(split, hostname);
+  const metadata = buildLNURLpMetadata(split, hostname);
   const metadataString = JSON.stringify(metadata);
   const hash = createHash("sha256");
   hash.update(metadataString);
@@ -48,7 +47,7 @@ export async function createInvoiceForSplit(
     params: {},
     body: {
       out: false,
-      amount: msatsToSats(amount),
+      amount: msatsToSats(amount), //convert amount to sats, since LNBits only takes sats
       memo: split.name + "@" + hostname,
       internal: false,
       description_hash: hash.digest("hex"),
@@ -83,7 +82,7 @@ routes.get(
   async (ctx) => {
     console.log(ctx.href);
     const split = ctx.state.split as Split;
-    const metadata = getLNURLpMetadata(
+    const metadata = buildLNURLpMetadata(
       split,
       new URL(ctx.state.publicUrl).hostname
     );
@@ -93,8 +92,8 @@ routes.get(
         `/lnurlp-callback/${split.name}`,
         ctx.state.publicUrl
       ).toString(),
-      minSendable: getMinSendable(split),
-      maxSendable: getMaxSendable(split),
+      minSendable: roundToSats(await getMinSendable(split)),
+      maxSendable: roundToSats(await getMaxSendable(split)),
       metadata: JSON.stringify(metadata),
       tag: "payRequest",
     };
@@ -103,8 +102,8 @@ routes.get(
 
 routes.get("/lnurlp-callback/:splitId", async (ctx) => {
   console.log(ctx.href);
-  const split = ctx.state.split;
-  const amount = Math.round(parseInt(ctx.query.amount as string) / 1000);
+  const split = ctx.state.split as Split;
+  const amount = parseInt(ctx.query.amount as string);
   const comment = ctx.query.comment as string | undefined;
 
   if (!Number.isFinite(amount)) {
@@ -112,12 +111,12 @@ routes.get("/lnurlp-callback/:splitId", async (ctx) => {
     ctx.status = 400;
     return;
   }
-  if (amount < split.minSendable) {
+  if (amount < (await getMinSendable(split))) {
     ctx.body = { status: "ERROR", reason: "amount less than minSendable" };
     ctx.status = 400;
     return;
   }
-  if (amount > split.maxSendable) {
+  if (amount > (await getMaxSendable(split))) {
     ctx.body = { status: "ERROR", reason: "amount greater than maxSendable" };
     ctx.status = 400;
     return;

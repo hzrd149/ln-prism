@@ -1,6 +1,6 @@
 import Router from "@koa/router";
 import { Split, db } from "../db.js";
-import { isValidAddress } from "../helpers/ln-address.js";
+import { getAddressMetadata } from "../helpers/ln-address.js";
 import { createSplit, createSplitTarget } from "../splits.js";
 import { loginPassword, loginUser } from "../env.js";
 
@@ -71,7 +71,7 @@ routes.post("/admin/split/:splitId/add", async (ctx) => {
   }
 
   // test address
-  if (!(await isValidAddress(address))) {
+  if (!(await getAddressMetadata(address))) {
     ctx.body = "Invalid address";
     ctx.status = 400;
     return;

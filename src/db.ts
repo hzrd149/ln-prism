@@ -16,8 +16,6 @@ console.log(`Using ${file}`);
 export type SplitTarget = {
   address: string;
   weight: number;
-  minSendable: number;
-  maxSendable: number;
 };
 export type Split = {
   name: string;

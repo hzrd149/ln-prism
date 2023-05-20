@@ -1,16 +1,23 @@
 import { db } from "../db.js";
+import { LNURLpayRequest } from "../types.js";
 
-export async function isValidAddress(address: string) {
+const addressMetadataCache = new Map<string, LNURLpayRequest>();
+
+export async function getAddressMetadata(
+  address: string
+): Promise<LNURLpayRequest | undefined> {
+  const cache = addressMetadataCache.get(address);
+  if (cache) return cache;
+
   try {
     const [name, domain] = address.split("@");
     const metadata = await fetch(
       `https://${domain}/.well-known/lnurlp/${name}`
     ).then((res) => res.json());
-    if (!metadata.callback) return false;
-    return true;
-  } catch (e) {
-    return false;
-  }
+
+    if (!metadata.callback) return;
+    return metadata;
+  } catch (e) {}
 }
 
 export function averageFee(address: string): number | undefined {

@@ -1,3 +1,12 @@
+export type LNURLpayRequest = {
+  callback: string;
+  maxSendable: number;
+  minSendable: number;
+  metadata: string;
+  tag: "payRequest";
+  commentAllowed?: number;
+};
+
 type MetadataType =
   | "text/plain"
   | "text/long-desc"
