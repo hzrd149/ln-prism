@@ -1,6 +1,6 @@
 # LN-Address-Splitter
 
-![image](https://github.com/hzrd149/ln-address-splitter/assets/8001706/42120885-c267-416c-8a05-649a3188433f)
+![image](https://github.com/hzrd149/ln-address-splitter/assets/8001706/d75f1268-9046-4d3a-9a44-da7fc0985252)
 
 ```mermaid
 flowchart TD
@@ -10,15 +10,15 @@ flowchart TD
     C -->|50%| F["guy@strike.army"]
 ```
 
-## Setting up a reverse proxy
+## Public access
 
-For the lightning addresses and LNURL endpoints to work this app needs to be served at the root of a domain ( `https://example.com/` ) it wont work if its hosted at a sub path ( `https://example.com/splits` )
+For the lightning addresses and the LNURL endpoints to work the app needs to be publicly accessible and served over https
 
 ## Running from source
 
-[NodeJS](https://nodejs.org/en) and [yarn](https://yarnpkg.com/) is required to build and run this app
+[NodeJS](https://nodejs.org/en) and [yarn](https://yarnpkg.com/) are required to build and run the app
 
-If you dont have either setup [nvm](https://github.com/nvm-sh/nvm) is probably the easiest way to set them up
+If you dont have either installing via [nvm](https://github.com/nvm-sh/nvm) is probably the easiest way to set them up
 
 ```bash
 git clone https://github.com/hzrd149/ln-address-splitter.git
@@ -36,7 +36,7 @@ yarn start
 
 ## Running locally with a tunnelmole tunnel
 
-`node development.mjs` will start a local development server and use [tunnelmole](https://tunnelmole.com/) to get a public facing domain
+`node development.mjs` will start a local development server and use [tunnelmole](https://tunnelmole.com/) to get a public facing domain with https
 
 ## Running with docker
 
