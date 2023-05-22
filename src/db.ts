@@ -6,7 +6,6 @@ import { LNURLPayMetadata } from "./types.js";
 
 if (!process.env.DB_PATH) throw new Error("missing DB_PATH");
 
-// db.json file path
 const file = isAbsolute(process.env.DB_PATH)
   ? process.env.DB_PATH
   : resolve(process.cwd(), process.env.DB_PATH);

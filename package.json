@@ -47,9 +47,5 @@
     "shelljs": "^0.8.5",
     "tunnelmole": "^2.1.10",
     "typescript": "^5.0.4"
-  },
-  "files": [
-    "./bin/*",
-    "./build/*"
-  ]
+  }
 }
