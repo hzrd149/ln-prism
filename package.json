@@ -9,6 +9,7 @@
     "generate-types": "openapi-typescript https://legend.lnbits.com/openapi.json -o src/lnbits/api.ts",
     "build": "tsc",
     "dev": "node development.mjs",
+    "tunnel": "tmole 3000",
     "format": "prettier -w . --ignore-path .gitignore",
     "start": "node build/index.js"
   },

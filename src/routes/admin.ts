@@ -87,6 +87,28 @@ routes.post("/admin/split/:splitId/add", async (ctx) => {
   await ctx.redirect(`/admin/split/${split.name}`);
 });
 
+// edit address
+routes.get("/admin/split/:splitId/edit/:address", (ctx) => {
+  const split = ctx.state.split as Split;
+  const payout = split.payouts.find((p) => p.address === ctx.params.address);
+  if (!payout) throw new Error("No payout with that address");
+  return ctx.render("admin/split/edit", { payout });
+});
+routes.post("/admin/split/:splitId/edit/:address", async (ctx) => {
+  const split = ctx.state.split as Split;
+  const address = ctx.request.body.address;
+  const weight = parseInt(ctx.request.body.weight);
+
+  split.payouts = split.payouts.map((p) => {
+    if (p.address === address) {
+      return { address, weight };
+    }
+    return p;
+  });
+
+  await ctx.redirect(`/admin/split/${split.name}`);
+});
+
 // remove address
 routes.get("/admin/split/:splitId/remove/:address", async (ctx) => {
   await ctx.render("admin/split/remove", { address: ctx.params.address });

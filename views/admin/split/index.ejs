@@ -9,7 +9,7 @@
 
 <h3>Payout</h3>
 
-<table>
+<table style="white-space: nowrap">
   <thead>
     <tr>
       <th>Address</th>
@@ -30,6 +30,11 @@
         %>
       </td>
       <td>
+        <a
+          href="<%- path %>/edit/<%- address %>"
+          class="button button-outline mb-0"
+          >Edit</a
+        >
         <a
           href="<%- path %>/remove/<%- address %>"
           class="button button-outline button-red mb-0"
@@ -75,7 +80,7 @@
 <% if (failedPayouts.length>0) { %>
 <h3>Failed payouts</h3>
 
-<table>
+<table style="white-space: nowrap">
   <thead>
     <tr>
       <th>Address</th>
