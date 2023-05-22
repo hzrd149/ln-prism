@@ -49,6 +49,9 @@ h1 {
 .mb-0 {
   margin-bottom: 0;
 }
+.container {
+  padding-bottom: 10rem;
+}
 
 .button.button-red {
   border-color: #d54e4e;

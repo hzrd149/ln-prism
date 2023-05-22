@@ -80,7 +80,7 @@ routes.all("/webhook/in/:webhookId", async (ctx) => {
 
   const fullComment = [split.name + "@" + ctx.hostname, comment]
     .filter(Boolean)
-    .join("\n");
+    .join("\n").trim();
 
   await createPayouts(split, amount, fullComment);
   ctx.body = "success";
@@ -116,17 +116,19 @@ routes.get("/lnurlp-callback/:splitId", async (ctx) => {
   const amount = parseInt(ctx.query.amount as string);
   const comment = ctx.query.comment as string | undefined;
 
+  const minSendable = roundToSats(await getMinSendable(split));
+  const maxSendable = roundToSats(await getMaxSendable(split));
   if (!Number.isFinite(amount)) {
     ctx.body = { status: "ERROR", reason: "missing amount" };
     ctx.status = 400;
     return;
   }
-  if (amount < (await getMinSendable(split))) {
+  if (amount < minSendable) {
     ctx.body = { status: "ERROR", reason: "amount less than minSendable" };
     ctx.status = 400;
     return;
   }
-  if (amount > (await getMaxSendable(split))) {
+  if (amount > maxSendable) {
     ctx.body = { status: "ERROR", reason: "amount greater than maxSendable" };
     ctx.status = 400;
     return;
