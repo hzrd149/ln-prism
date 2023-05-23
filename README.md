@@ -14,6 +14,18 @@ flowchart TD
 
 For the lightning addresses and the LNURL endpoints to work the app needs to be publicly accessible and served over https
 
+## Configuration
+
+All configuration is done through environment variables
+
+- `DB_PATH` the path to the json file where data will be stored (default `./splits.json`)
+- `PORT` http server port (default `3000`)
+- `LNBITS_URL` URL to the lnbits instance ( this can be a local address, eg `http://192.168.1.100:8000` or `http://umbrel.local:3007` )
+- `WALLET_ID` The id of the lnbits wallet
+- `ADMIN_KEY` The admin key for the wallet, used to create and pay invoices
+- `LOGIN_USER` The username for the `/admin` dashboard (default `admin`)
+- `LOGIN_PASSWORD` The password for the `/admin` (if its not set then the `/admin` routes will be publicly accessible)
+
 ## Running from source
 
 [NodeJS](https://nodejs.org/en) and [yarn](https://yarnpkg.com/) are required to build and run the app

@@ -1,5 +1,5 @@
 import { nanoid } from "nanoid";
-import { adminKey } from "../env.js";
+import { ADMIN_KEY } from "../env.js";
 import lnbits from "../lnbits/client.js";
 import { createHash } from "node:crypto";
 import {
@@ -12,6 +12,7 @@ import Router from "@koa/router";
 import { Split, db } from "../db.js";
 import { msatsToSats, roundToSats } from "../helpers.js";
 import { LNURLpayRequest } from "../types.js";
+import { BadRequestError, NotFountError } from "../helpers/errors.js";
 
 const routes = new Router();
 
@@ -44,7 +45,7 @@ export async function createInvoiceForSplit(
   const unhashedDescription = Buffer.from(view).toString("hex");
 
   const { data, error } = await lnbits.post("/api/v1/payments", {
-    headers: { "X-Api-Key": adminKey },
+    headers: { "X-Api-Key": ADMIN_KEY },
     params: {},
     body: {
       out: false,
@@ -74,13 +75,14 @@ routes.all("/webhook/in/:webhookId", async (ctx) => {
   const { split: splitName, amount, comment } = webhooks.get(id);
 
   const split = db.data.splits[splitName];
-  if (!split) throw new Error(`unknown split ${splitName}`);
+  if (!split) throw new NotFountError(`unknown split ${splitName}`);
 
   console.log(`Received ${msatsToSats(amount)} sats on ${splitName}`);
 
   const fullComment = [split.name + "@" + ctx.hostname, comment]
     .filter(Boolean)
-    .join("\n").trim();
+    .join("\n")
+    .trim();
 
   await createPayouts(split, amount, fullComment);
   ctx.body = "success";
@@ -112,29 +114,20 @@ routes.get(
 
 routes.get("/lnurlp-callback/:splitId", async (ctx) => {
   console.log(ctx.href);
-  const split = ctx.state.split as Split;
-  const amount = parseInt(ctx.query.amount as string);
-  const comment = ctx.query.comment as string | undefined;
-
-  const minSendable = roundToSats(await getMinSendable(split));
-  const maxSendable = roundToSats(await getMaxSendable(split));
-  if (!Number.isFinite(amount)) {
-    ctx.body = { status: "ERROR", reason: "missing amount" };
-    ctx.status = 400;
-    return;
-  }
-  if (amount < minSendable) {
-    ctx.body = { status: "ERROR", reason: "amount less than minSendable" };
-    ctx.status = 400;
-    return;
-  }
-  if (amount > maxSendable) {
-    ctx.body = { status: "ERROR", reason: "amount greater than maxSendable" };
-    ctx.status = 400;
-    return;
-  }
 
   try {
+    const split = ctx.state.split as Split;
+    const amount = parseInt(ctx.query.amount as string);
+    const comment = ctx.query.comment as string | undefined;
+
+    const minSendable = roundToSats(await getMinSendable(split));
+    const maxSendable = roundToSats(await getMaxSendable(split));
+    if (!Number.isFinite(amount)) throw new BadRequestError("missing amount");
+    if (amount < minSendable)
+      throw new BadRequestError("amount less than minSendable");
+    if (amount > maxSendable)
+      throw new BadRequestError("amount greater than maxSendable");
+
     const { payment_request, payment_hash } = await createInvoiceForSplit(
       split,
       amount,
@@ -151,7 +144,7 @@ routes.get("/lnurlp-callback/:splitId", async (ctx) => {
       status: "ERROR",
       reason: e.message,
     };
-    ctx.status = 500;
+    ctx.status = e.status || 500;
     return;
   }
 });

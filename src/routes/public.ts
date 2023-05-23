@@ -1,5 +1,6 @@
 import { Split } from "../db.js";
 import { satsToMsats, msatsToSats } from "../helpers.js";
+import { BadRequestError } from "../helpers/errors.js";
 import { estimatedFee } from "../helpers/ln-address.js";
 import { createPngQrCode, createSvgQrCode } from "../helpers/qrcode.js";
 import { getMaxSendable, getMinSendable } from "../splits.js";
@@ -27,7 +28,8 @@ routes.get("/split/:splitId", async (ctx) => {
 
 routes.get("/split/:splitId/invoice", async (ctx) => {
   const amount = parseInt(ctx.query.amount as string);
-  if (!amount) throw new Error("missing amount");
+  if (!amount) throw new BadRequestError("missing amount");
+
   const { payment_request, payment_hash } = await createInvoiceForSplit(
     ctx.state.split,
     satsToMsats(amount),

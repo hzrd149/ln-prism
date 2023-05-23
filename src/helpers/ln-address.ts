@@ -11,9 +11,9 @@ export async function getAddressMetadata(
 
   try {
     const [name, domain] = address.split("@");
-    const metadata = await fetch(
-      `https://${domain}/.well-known/lnurlp/${name}`
-    ).then((res) => res.json());
+    const res = await fetch(`https://${domain}/.well-known/lnurlp/${name}`);
+    if (!res.ok) throw new Error("failed to get address metadata");
+    const metadata = await res.json();
 
     if (!metadata.callback) return;
     return metadata;

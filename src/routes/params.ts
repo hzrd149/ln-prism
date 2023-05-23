@@ -1,6 +1,7 @@
 import Router from "@koa/router";
 import { db } from "../db.js";
 import { averageFee, estimatedFee } from "../helpers/ln-address.js";
+import { NotFountError } from "../helpers/errors.js";
 
 export function setupParams(router: Router) {
   router.use((ctx, next) => {
@@ -19,11 +20,8 @@ export function setupParams(router: Router) {
   router.param("splitId", async (name, ctx, next) => {
     const split = db.data.splits[name];
 
-    if (!split) {
-      ctx.body = "no split with name " + name;
-      ctx.status = 404;
-      return;
-    }
+    if (!split)
+      throw new NotFountError(name + "@" + ctx.hostname + " dose not exist");
 
     ctx.state.split = split;
     ctx.state.splitAddress = split.name + "@" + ctx.hostname;

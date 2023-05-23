@@ -1,5 +1,5 @@
 import lnbits from "./lnbits/client.js";
-import { adminKey, lnbitsUrl } from "./env.js";
+import { ADMIN_KEY, LNBITS_URL } from "./env.js";
 import { AddressPayout, Split, SplitTarget, db } from "./db.js";
 import { satsToMsats, roundToSats, msatsToSats } from "./helpers.js";
 import { nanoid } from "nanoid";
@@ -140,7 +140,7 @@ export async function payNextPayout() {
     const invoiceId = nanoid();
     const { error, data } = await lnbits.post("/api/v1/payments", {
       headers: {
-        "X-Api-Key": adminKey,
+        "X-Api-Key": ADMIN_KEY,
       },
       params: {},
       body: {
@@ -194,9 +194,9 @@ export async function handleWebhook(id: string) {
 
   const { paymentHash, payout } = webhook;
 
-  const url = new URL(`/api/v1/payments/${paymentHash}`, lnbitsUrl);
+  const url = new URL(`/api/v1/payments/${paymentHash}`, LNBITS_URL);
   const details = (await fetch(url, {
-    headers: { "X-Api-Key": adminKey },
+    headers: { "X-Api-Key": ADMIN_KEY },
   }).then((res) => res.json())) as PaymentDetails;
 
   db.data.addressFees[payout.address] =

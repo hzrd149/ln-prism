@@ -2,13 +2,9 @@ import { resolve, isAbsolute } from "node:path";
 
 import { Low } from "lowdb";
 import { JSONFile } from "lowdb/node";
-import { LNURLPayMetadata } from "./types.js";
+import { DB_PATH } from "./env.js";
 
-if (!process.env.DB_PATH) throw new Error("missing DB_PATH");
-
-const file = isAbsolute(process.env.DB_PATH)
-  ? process.env.DB_PATH
-  : resolve(process.cwd(), process.env.DB_PATH);
+const file = isAbsolute(DB_PATH) ? DB_PATH : resolve(process.cwd(), DB_PATH);
 
 console.log(`Using ${file}`);
 

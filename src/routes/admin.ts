@@ -2,14 +2,19 @@ import Router from "@koa/router";
 import { Split, db } from "../db.js";
 import { getAddressMetadata } from "../helpers/ln-address.js";
 import { createSplit, createSplitTarget } from "../splits.js";
-import { loginPassword, loginUser } from "../env.js";
+import { LOGIN_PASSWORD, LOGIN_USER } from "../env.js";
+import {
+  BadRequestError,
+  ConflictError,
+  NotFountError,
+} from "../helpers/errors.js";
 
 const { default: auth } = await import("koa-basic-auth");
 
 const routes = new Router();
 
-if (loginUser && loginPassword) {
-  routes.use(auth({ name: loginUser, pass: loginPassword }));
+if (LOGIN_USER && LOGIN_PASSWORD) {
+  routes.use(auth({ name: LOGIN_USER, pass: LOGIN_PASSWORD }));
 }
 
 routes.get("/admin", async (ctx) => {
@@ -21,7 +26,7 @@ routes.get("/admin/create", (ctx) => ctx.render("admin/create"));
 routes.post("/admin/create", async (ctx) => {
   const name = ctx.request.body.name;
   if (db.data.splits[name]) {
-    throw new Error("a split with that name already exists");
+    throw new ConflictError("A split with that name already exists");
   }
 
   const split = await createSplit(ctx.request.body.name);
@@ -66,18 +71,12 @@ routes.post("/admin/split/:splitId/add", async (ctx) => {
   const address = ctx.request.body.address;
   const weight = parseInt(ctx.request.body.weight);
 
-  if (split.payouts.find((p) => p.address === address)) {
-    ctx.body = "That address already exists";
-    ctx.status = 409;
-    return;
-  }
+  if (split.payouts.find((p) => p.address === address))
+    throw new ConflictError("That address already exists");
 
   // test address
-  if (!(await getAddressMetadata(address))) {
-    ctx.body = "Invalid address";
-    ctx.status = 400;
-    return;
-  }
+  if (!(await getAddressMetadata(address)))
+    throw new BadRequestError("Invalid address");
 
   if (address && weight) {
     const target = await createSplitTarget(address, weight);
@@ -91,7 +90,7 @@ routes.post("/admin/split/:splitId/add", async (ctx) => {
 routes.get("/admin/split/:splitId/edit/:address", (ctx) => {
   const split = ctx.state.split as Split;
   const payout = split.payouts.find((p) => p.address === ctx.params.address);
-  if (!payout) throw new Error("No payout with that address");
+  if (!payout) throw new NotFountError("No payout with that address");
   return ctx.render("admin/split/edit", { payout });
 });
 routes.post("/admin/split/:splitId/edit/:address", async (ctx) => {
