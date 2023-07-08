@@ -9,6 +9,7 @@ import { koaBody } from "koa-body";
 import publicRoutes from "./routes/public.js";
 import helperRoutes from "./routes/helpers.js";
 import adminRoutes from "./routes/admin.js";
+import apiRoutes from "./routes/api.js";
 import lnurlRoutes from "./routes/lnurl.js";
 import { setupParams } from "./routes/params.js";
 import webhookRoutes from "./routes/webhooks.js";
@@ -50,7 +51,11 @@ app.use(async (ctx, next) => {
       ctx.body = "cant haz that";
     } else {
       ctx.status = err.statusCode || err.status || 500;
-      ctx.render("error", { error: err });
+
+      if (ctx.accepts(["html", "json"]) == "html")
+        return ctx.render("error", { error: err });
+      else
+        ctx.body = { success: false, status: err.status, message: err.message };
     }
   }
 });
@@ -62,6 +67,7 @@ router.use(publicRoutes.routes(), publicRoutes.allowedMethods());
 router.use(helperRoutes.routes(), helperRoutes.allowedMethods());
 router.use(lnurlRoutes.routes(), lnurlRoutes.allowedMethods());
 router.use(adminRoutes.routes(), adminRoutes.allowedMethods());
+router.use(apiRoutes.routes(), apiRoutes.allowedMethods());
 router.use(webhookRoutes.routes(), webhookRoutes.allowedMethods());
 
 app.use(router.routes()).use(router.allowedMethods());

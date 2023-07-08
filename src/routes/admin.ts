@@ -1,7 +1,7 @@
 import Router from "@koa/router";
 import { Split, db } from "../db.js";
 import { getAddressMetadata } from "../helpers/ln-address.js";
-import { createSplit, createSplitTarget } from "../splits.js";
+import { createSplit } from "../splits.js";
 import { LOGIN_PASSWORD, LOGIN_USER } from "../env.js";
 import {
   BadRequestError,
@@ -22,6 +22,7 @@ routes.get("/admin", async (ctx) => {
   await ctx.render("admin/index", { splits });
 });
 
+// create
 routes.get("/admin/create", (ctx) => ctx.render("admin/create"));
 routes.post("/admin/create", async (ctx) => {
   const name = ctx.request.body.name;
@@ -31,16 +32,14 @@ routes.post("/admin/create", async (ctx) => {
 
   const split = await createSplit(ctx.request.body.name);
 
-  ctx.redirect(`/admin/split/${split.name}`);
+  return ctx.redirect(`/admin/split/${split.name}`);
 });
 
-routes.get("/admin/split/:splitId", (ctx, next) => {
-  ctx.state.ogTitle = ctx.state.splitAddress;
-  return next();
-});
-
+// get split
 routes.get("/admin/split/:splitId", (ctx) => {
   const split = ctx.state.split as Split;
+
+  ctx.state.ogTitle = ctx.state.splitAddress;
 
   return ctx.render("admin/split/index", {
     totalWeight: split.payouts.reduce((v, p) => v + p.weight, 0),
@@ -60,7 +59,6 @@ routes.post("/admin/split/:splitId/delete", async (ctx) => {
   db.data.pendingPayouts = db.data.pendingPayouts.filter(
     (p) => p.split !== split.name
   );
-
   await ctx.redirect("/admin");
 });
 
@@ -76,11 +74,10 @@ routes.post("/admin/split/:splitId/add", async (ctx) => {
 
   // test address
   if (!(await getAddressMetadata(address)))
-    throw new BadRequestError("Invalid address");
+    throw new BadRequestError(`Unreachable address ${address}`);
 
   if (address && weight) {
-    const target = await createSplitTarget(address, weight);
-    split.payouts.push(target);
+    split.payouts.push({ address, weight });
   }
 
   await ctx.redirect(`/admin/split/${split.name}`);

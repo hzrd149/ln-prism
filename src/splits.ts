@@ -43,16 +43,6 @@ export function getMaxSendable(split: Split) {
   return satsToMsats(100000); // 100,000 sats
 }
 
-export async function createSplitTarget(
-  address: string,
-  weight: number
-): Promise<SplitTarget> {
-  return {
-    address,
-    weight,
-  };
-}
-
 export function buildLNURLpMetadata(
   split: Split,
   hostname: string
