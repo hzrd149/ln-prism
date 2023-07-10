@@ -1,110 +1,36 @@
-import { nanoid } from "nanoid";
-import { ADMIN_KEY } from "../env.js";
-import lnbits from "../lnbits/client.js";
-import { createHash } from "node:crypto";
-import {
-  createPayouts,
-  buildLNURLpMetadata,
-  getMaxSendable,
-  getMinSendable,
-} from "../splits.js";
+import { Split } from "../splits.js";
 import Router from "@koa/router";
-import { Split, db } from "../db.js";
-import { msatsToSats, roundToSats } from "../helpers.js";
-import { LNURLpayRequest } from "../types.js";
-import { BadRequestError, NotFountError } from "../helpers/errors.js";
+import { roundToSats } from "../helpers/sats.js";
+import { LNURLPayMetadata, LNURLpayRequest } from "../types.js";
+import { BadRequestError } from "../helpers/errors.js";
 
-const routes = new Router();
+export const lnurlRouter = new Router();
 
-const webhooks = new Map<
-  string,
-  { split: string; amount: number; comment?: string }
->();
+export function buildLNURLpMetadata(split: Split): LNURLPayMetadata {
+  const total = split.totalWeight;
 
-export async function createInvoiceForSplit(
-  split: Split,
-  amount: number,
-  origin: string,
-  comment?: string
-) {
-  const hostname = new URL(origin).hostname;
-  const metadata = buildLNURLpMetadata(split, hostname);
-  const metadataString = JSON.stringify(metadata);
-  const hash = createHash("sha256");
-  hash.update(metadataString);
-
-  const webhookId = nanoid();
-  webhooks.set(webhookId, {
-    split: split.name,
-    amount: roundToSats(amount),
-    comment,
-  });
-
-  const encoder = new TextEncoder();
-  const view = encoder.encode(metadataString);
-  const unhashedDescription = Buffer.from(view).toString("hex");
-
-  const { data, error } = await lnbits.post("/api/v1/payments", {
-    headers: { "X-Api-Key": ADMIN_KEY },
-    params: {},
-    body: {
-      out: false,
-      amount: msatsToSats(amount), //convert amount to sats, since LNBits only takes sats
-      memo: split.name + "@" + hostname,
-      internal: false,
-      description_hash: hash.digest("hex"),
-      unhashed_description: unhashedDescription,
-      webhook: new URL(`/webhook/in/${webhookId}`, origin).toString(),
-    },
-  });
-  if (error) throw new Error("failed to create invoice: " + error.detail);
-
-  return data as {
-    payment_request: string;
-    payment_hash: string;
-    checking_id: string;
-  };
+  return [
+    ["text/plain", split.address],
+    [
+      "text/long-desc",
+      split.targets
+        .map((t) => `${t.address}: ${((t.weight / total) * 100).toFixed(2)}%`)
+        .join("\n"),
+    ],
+  ];
 }
 
-routes.all("/webhook/in/:webhookId", async (ctx) => {
-  console.log(ctx.href);
-
-  const id = ctx.params.webhookId as string;
-  if (!webhooks.has(id)) return;
-
-  const { split: splitName, amount, comment } = webhooks.get(id);
-
-  const split = db.data.splits[splitName];
-  if (!split) throw new NotFountError(`unknown split ${splitName}`);
-
-  console.log(`Received ${msatsToSats(amount)} sats on ${splitName}`);
-
-  const fullComment = [split.name + "@" + ctx.hostname, comment]
-    .filter(Boolean)
-    .join("\n")
-    .trim();
-
-  await createPayouts(split, amount, fullComment);
-  ctx.body = "success";
-});
-
-routes.get(
-  ["/lnurlp/:splitId", "/.well-known/lnurlp/:splitId"],
+lnurlRouter.get(
+  ["/lnurlp/:splitName", "/.well-known/lnurlp/:splitName"],
   async (ctx) => {
     console.log(ctx.href);
     const split = ctx.state.split as Split;
-    const metadata = buildLNURLpMetadata(
-      split,
-      new URL(ctx.state.publicUrl).hostname
-    );
+    const metadata = buildLNURLpMetadata(split);
 
     ctx.body = {
-      callback: new URL(
-        `/lnurlp-callback/${split.name}`,
-        ctx.state.publicUrl
-      ).toString(),
-      minSendable: roundToSats(await getMinSendable(split)),
-      maxSendable: roundToSats(await getMaxSendable(split)),
+      callback: `https://${split.domain}/lnurlp-callback/${split.name}`,
+      minSendable: roundToSats(await split.getMinSendable()),
+      maxSendable: roundToSats(await split.getMaxSendable()),
       metadata: JSON.stringify(metadata),
       commentAllowed: 256,
       tag: "payRequest",
@@ -112,30 +38,31 @@ routes.get(
   }
 );
 
-routes.get("/lnurlp-callback/:splitId", async (ctx) => {
+lnurlRouter.get("/lnurlp-callback/:splitName", async (ctx) => {
   console.log(ctx.href);
 
   try {
     const split = ctx.state.split as Split;
     const amount = parseInt(ctx.query.amount as string);
+    const metadata = buildLNURLpMetadata(split);
     const comment = ctx.query.comment as string | undefined;
 
-    const minSendable = roundToSats(await getMinSendable(split));
-    const maxSendable = roundToSats(await getMaxSendable(split));
+    const minSendable = roundToSats(await split.getMinSendable());
+    const maxSendable = roundToSats(await split.getMaxSendable());
     if (!Number.isFinite(amount)) throw new BadRequestError("missing amount");
     if (amount < minSendable)
       throw new BadRequestError("amount less than minSendable");
     if (amount > maxSendable)
       throw new BadRequestError("amount greater than maxSendable");
 
-    const { payment_request, payment_hash } = await createInvoiceForSplit(
-      split,
+    const { paymentRequest } = await split.createInvoice(
       amount,
-      ctx.state.publicUrl,
+      JSON.stringify(metadata),
       comment
     );
+
     ctx.body = {
-      pr: payment_request,
+      pr: paymentRequest,
       routes: [],
     };
     ctx.status = 200;
@@ -145,8 +72,7 @@ routes.get("/lnurlp-callback/:splitId", async (ctx) => {
       reason: e.message,
     };
     ctx.status = e.status || 500;
+
     return;
   }
 });
-
-export default routes;

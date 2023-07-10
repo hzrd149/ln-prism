@@ -1,6 +1,9 @@
-<h1><%- splitAddress %></h1>
+<h1><%- split.address %></h1>
 
 <input type="text" value="<%- invoice %>" readonly />
 <a href="lightning:<%- invoice %>">
   <img src="/qr/lightning:<%- invoice %>" alt="invoice qrcode" />
 </a>
+
+<br />
+<a class="button" href="./">Done</a>

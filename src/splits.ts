@@ -1,198 +1,311 @@
-import lnbits from "./lnbits/client.js";
-import { ADMIN_KEY, LNBITS_URL } from "./env.js";
-import { AddressPayout, Split, SplitTarget, db } from "./db.js";
-import { satsToMsats, roundToSats, msatsToSats } from "./helpers.js";
+import {
+  Kind,
+  finishEvent,
+  generatePrivateKey,
+  getPublicKey,
+  nip19,
+} from "nostr-tools";
+import { NOSTR_RELAYS } from "./env.js";
+import { db } from "./db.js";
+import { satsToMsats, roundToSats, msatsToSats } from "./helpers/sats.js";
 import { nanoid } from "nanoid";
-import { estimatedFee, getAddressMetadata } from "./helpers/ln-address.js";
-import { LNURLPayMetadata } from "./types.js";
+import { getAddressMetadata } from "./helpers/ln-address.js";
+import lnbits from "./lightning/lnbits/index.js";
+import { nowUnix } from "./helpers/nostr.js";
+import { connect, relayPool } from "./relay-pool.js";
+import { BadRequestError, ConflictError } from "./helpers/errors.js";
+import { averageFee, estimatedFee, recordFee } from "./fees.js";
+import { getInvoiceFromLNAddress } from "./helpers/lnurl.js";
 
-type LNURLpayRequest = {
-  callback: string;
-  maxSendable: number;
-  minSendable: number;
-  metadata: string;
-  tag: "payRequest";
-  commentAllowed?: number;
+type SplitTarget = {
+  id: string;
+  address: string;
+  weight: number;
+};
+type PendingInvoice = {
+  id: string;
+  paymentHash: string;
+  amount: number;
+  zapRequest?: string;
+  lnurlComment?: string;
+};
+type PendingPayout = {
+  address: string;
+  amount: number;
+  weight: number;
+  lnurlComment?: string;
+  failed?: string;
 };
 
-export async function createSplit(name: string) {
-  const split: Split = {
-    name,
-    payouts: [],
-  };
+export class Split {
+  privateKey: string;
+  id: string;
+  name: string;
+  domain: string;
+  targets: SplitTarget[] = [];
+  pending: PendingInvoice[] = [];
+  payouts: PendingPayout[] = [];
 
-  db.data.splits[name] = split;
-
-  return split;
-}
-
-export async function getMinSendable(split: Split) {
-  let minSendable = 0;
-  for (const { address } of split.payouts) {
-    const metadata = await getAddressMetadata(address);
-
-    minSendable += estimatedFee(address);
-    if (metadata.minSendable) {
-      minSendable += metadata.minSendable;
-    }
+  constructor(name: string, domain: string, privateKey?: string) {
+    this.id = nanoid();
+    this.privateKey = privateKey || generatePrivateKey();
+    this.domain = domain;
+    this.name = name;
   }
 
-  return minSendable;
-}
-export function getMaxSendable(split: Split) {
-  return satsToMsats(100000); // 100,000 sats
-}
+  get address() {
+    return this.name + "@" + this.domain;
+  }
+  get totalWeight() {
+    return this.targets.reduce((v, t) => v + t.weight, 0);
+  }
+  get nprofile() {
+    return nip19.nprofileEncode({
+      pubkey: getPublicKey(this.privateKey),
+      relays: [NOSTR_RELAYS[0]],
+    });
+  }
+  get npub() {
+    return nip19.npubEncode(getPublicKey(this.privateKey));
+  }
+  get lnurlp() {
+    return `lnurlp://${this.domain}/lnurlp/${this.name}`;
+  }
+  get targetFees() {
+    const fees: Record<string, { estimate: number; average?: number }> = {};
+    for (const target of this.targets) {
+      fees[target.id] = {
+        estimate: estimatedFee(target.address),
+        average: averageFee(target.address),
+      };
+    }
 
-export function buildLNURLpMetadata(
-  split: Split,
-  hostname: string
-): LNURLPayMetadata {
-  return [["text/plain", split.name + "@" + hostname]];
-}
+    return fees;
+  }
 
-export async function createPayouts(
-  split: Split,
-  amount: number,
-  comment?: string
-) {
-  const totalWeight = split.payouts.reduce(
-    (total, { weight }) => total + weight,
-    0
-  );
+  async updateNostrProfile() {
+    const targets = getTargetPercentages(this.targets)
+      .map((t) => `${t.address}: ${t.percent.toFixed(2)}%`)
+      .join("\n");
 
-  for (const { address, weight } of split.payouts) {
-    const payoutAmount = Math.round((weight / totalWeight) * amount);
-
-    const payout: AddressPayout = {
-      address,
-      weight,
-      amount: payoutAmount,
-      split: split.name,
-      comment,
+    const metadata = {
+      name: this.address,
+      lud16: this.address,
+      about: targets,
     };
 
-    db.data.pendingPayouts.push(payout);
+    const kind0 = finishEvent(
+      {
+        kind: Kind.Metadata,
+        content: JSON.stringify(metadata),
+        created_at: nowUnix(),
+        tags: [],
+      },
+      this.privateKey
+    );
+
+    await connect(NOSTR_RELAYS);
+    const pub = relayPool.publish(NOSTR_RELAYS, kind0);
+
+    this.log(`Updated nostr profile`);
+  }
+
+  async getMinSendable() {
+    const totalWeight = this.totalWeight;
+
+    let estFees = 0;
+    let maxMinSendable = 0;
+    for (const { address, weight } of this.targets) {
+      const metadata = await getAddressMetadata(address);
+
+      const fee = estimatedFee(address);
+      estFees += fee;
+
+      if (metadata.minSendable) {
+        maxMinSendable = Math.max(
+          maxMinSendable,
+          metadata.minSendable * (totalWeight / weight)
+        );
+      }
+    }
+
+    return maxMinSendable + estFees;
+  }
+  async getMaxSendable() {
+    return satsToMsats(100000); // 100,000 sats
+  }
+
+  getTarget(id: string): SplitTarget | undefined {
+    return this.targets.find((target) => target.id == id);
+  }
+  hasTarget(address: string) {
+    return this.targets.some((t) => t.address === address);
+  }
+  async addTarget(address: string, weight: number) {
+    if (this.targets.find((p) => p.address === address))
+      throw new ConflictError("That address already exists");
+
+    // test address
+    if (!(await getAddressMetadata(address)))
+      throw new BadRequestError(`Unreachable address ${address}`);
+
+    this.targets.push({ id: nanoid(), address, weight });
+
+    await this.updateNostrProfile();
+  }
+  async removeTarget(id: string) {
+    this.targets = this.targets.filter((target) => target.id !== id);
+
+    await this.updateNostrProfile();
+  }
+  async replaceTargets(targets: { address: string; weight: number }[]) {
+    const dedupe: Record<string, number> = {};
+    for (const { address, weight } of targets) {
+      dedupe[address] = weight;
+    }
+
+    this.targets = [];
+    for (const [address, weight] of Object.entries(dedupe)) {
+      if (!(await getAddressMetadata(address)))
+        throw new BadRequestError(`Unreachable address ${address}`);
+      this.targets.push({ id: nanoid(), address, weight });
+    }
+
+    await this.updateNostrProfile();
+  }
+  async updateTarget(
+    id: string,
+    fields: { address?: string; weight?: number }
+  ) {
+    const target = this.getTarget(id);
+
+    if (!target) throw new Error(`no target with id, ${id}`);
+
+    Object.assign(target, fields);
+    await this.updateNostrProfile();
+  }
+
+  private log(...args: any[]) {
+    console.log(`${this.address}:`, ...args);
+  }
+
+  async createInvoice(
+    amount: number,
+    description?: string,
+    lnurlComment?: string
+  ) {
+    const id = nanoid();
+    const invoice = await lnbits.createInvoice(
+      amount,
+      description,
+      `https://${this.domain}/webhook/${this.id}/${id}`
+    );
+
+    this.pending.push({
+      id,
+      amount,
+      paymentHash: invoice.paymentHash,
+      lnurlComment,
+    });
+
+    return invoice;
+  }
+
+  async handleInvoicePaid(id: string) {
+    const pending = this.pending.find((p) => p.id === id);
+    const totalWeight = this.totalWeight;
+
+    this.log(`Received ${msatsToSats(pending.amount)} sats`);
+
+    for (const { address, weight } of this.targets) {
+      const payoutAmount = Math.round((weight / totalWeight) * pending.amount);
+
+      const payout: PendingPayout = {
+        address,
+        weight,
+        amount: payoutAmount,
+        lnurlComment: pending.lnurlComment,
+      };
+
+      this.payouts.push(payout);
+    }
+  }
+
+  async payNext() {
+    const payout = this.payouts.find((p) => !p.failed);
+    if (!payout) return;
+
+    // remove the payout from the array
+    const idx = this.payouts.indexOf(payout);
+    if (idx > -1) this.payouts.splice(idx, 1);
+
+    // payout amount - estimated fees and round to the nearest sat (since most LN nodes don't support msats)
+    const estFee = estimatedFee(payout.address);
+    const amount = roundToSats(payout.amount - estFee);
+
+    this.log(
+      `Paying ${payout.address} ${msatsToSats(
+        amount
+      )} sats ( estimated fee of ${estFee / 1000} sats )`
+    );
+
+    try {
+      const payRequest = await getInvoiceFromLNAddress(
+        payout.address,
+        amount,
+        payout.lnurlComment
+      );
+
+      const { paymentHash, fee } = await lnbits.payInvoice(payRequest);
+
+      recordFee(payout.address, fee);
+
+      return paymentHash;
+    } catch (e) {
+      // log error
+      if (e instanceof Error) {
+        this.log("Failed:" + e.message);
+        payout.failed = e.message;
+      } else {
+        this.log(e);
+        payout.failed = "unknown";
+      }
+
+      // add the payout back into the array
+      this.payouts.push(payout);
+    }
   }
 }
 
-const webhooks = new Map<
-  string,
-  { payout: AddressPayout; paymentHash: string }
->();
+export async function createSplit(
+  name: string,
+  domain: string,
+  privateKey?: string
+) {
+  const split = new Split(name, domain, privateKey);
 
-export async function payNextPayout() {
-  const payout = db.data.pendingPayouts.find((p) => !p.failed);
-  if (!payout) return;
-
-  const idx = db.data.pendingPayouts.indexOf(payout);
-  if (idx > -1) db.data.pendingPayouts.splice(idx, 1);
-
-  // payout amount - estimated fees and round to the nearest sat (since most LN nodes dont support msats)
-  const estFee = estimatedFee(payout.address);
-  const amount = roundToSats(payout.amount - estFee);
-
-  console.log(
-    `Paying ${payout.address} ${msatsToSats(amount)} sats from split "${
-      payout.split
-    }" with estimated fee of ${estFee / 1000} sats`
-  );
-
-  try {
-    let [name, domain] = payout.address.split("@");
-    const lnurl = `https://${domain}/.well-known/lnurlp/${name}`;
-
-    const metadata = (await fetch(lnurl).then((res) =>
-      res.json()
-    )) as LNURLpayRequest;
-
-    if (metadata.minSendable && amount < metadata.minSendable)
-      throw new Error("Cant send payment: amount lower than minSendable");
-    if (metadata.maxSendable && amount > metadata.maxSendable)
-      throw new Error("Cant send payment: amount greater than maxSendable");
-
-    const callbackUrl = new URL(metadata.callback);
-    callbackUrl.searchParams.append("amount", String(amount));
-
-    if (metadata.commentAllowed && payout.comment) {
-      if (payout.comment.length > metadata.commentAllowed)
-        throw new Error("comment too long");
-      callbackUrl.searchParams.append("comment", payout.comment);
-    }
-
-    const {
-      pr: payRequest,
-      status,
-      reason,
-    } = await fetch(callbackUrl).then((res) => res.json());
-
-    if (status === "ERROR") throw new Error(reason);
-
-    const invoiceId = nanoid();
-    const { error, data } = await lnbits.post("/api/v1/payments", {
-      headers: {
-        "X-Api-Key": ADMIN_KEY,
-      },
-      params: {},
-      body: {
-        out: true,
-        memo: `${payout.split} ${payout.weight}`,
-        bolt11: payRequest,
-        // webhook: new URL(`/webhook/out/${invoiceId}`, webhookUrl).toString(),
-      },
-    });
-
-    if (error) throw new Error("Failed to create invoice");
-    const result = data as { payment_hash: string; checking_id: string };
-
-    webhooks.set(invoiceId, {
-      payout,
-      paymentHash: result.payment_hash,
-    });
-
-    await handleWebhook(invoiceId);
-
-    return result.payment_hash;
-  } catch (e) {
-    if (e instanceof Error) {
-      console.log("Failed:", e.message);
-      payout.failed = e.message;
-    } else {
-      console.log(e);
-      payout.failed = "unknown";
-    }
-
-    db.data.pendingPayouts.push(payout);
+  if (getSplitByName(name, domain)) {
+    throw new Error("A split with that name already exists");
   }
+
+  db.data.splits.push(split);
+  return split;
+}
+export async function removeSplit(id: string) {
+  db.data.splits = db.data.splits.filter((s) => s.id !== id);
 }
 
-type PaymentDetails = {
-  paid: boolean;
-  preimage: string;
-  details: {
-    checking_id: string;
-    pending: boolean;
-    amount: number;
-    fee: number;
-    payment_hash: string;
-    wallet_id: string;
-  };
-};
+export function getSplitById(splitId: string) {
+  return db.data.splits.find((s) => s.id === splitId);
+}
+export function getSplitByName(name: string, domain: string) {
+  return db.data.splits.find((s) => s.name === name && s.domain === domain);
+}
 
-export async function handleWebhook(id: string) {
-  const webhook = webhooks.get(id);
-  if (!webhook) return;
-
-  const { paymentHash, payout } = webhook;
-
-  const url = new URL(`/api/v1/payments/${paymentHash}`, LNBITS_URL);
-  const details = (await fetch(url, {
-    headers: { "X-Api-Key": ADMIN_KEY },
-  }).then((res) => res.json())) as PaymentDetails;
-
-  db.data.addressFees[payout.address] =
-    db.data.addressFees[payout.address] || [];
-
-  db.data.addressFees[payout.address].push(details.details.fee);
-
-  webhooks.delete(id);
+// old
+function getTargetPercentages(
+  targets: SplitTarget[]
+): (SplitTarget & { percent: number })[] {
+  const totalWeight = targets.reduce((v, t) => v + t.weight, 0);
+  return targets.map((t) => ({ ...t, percent: t.weight / totalWeight }));
 }

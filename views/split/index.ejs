@@ -1,4 +1,4 @@
-<h1><%- splitAddress %></h1>
+<h1><%- split.address %></h1>
 
 <form action="/split/<%- split.name %>/invoice" method="get">
   <label for="address"
@@ -29,12 +29,12 @@
     </tr>
   </thead>
   <tbody>
-    <% split.payouts.forEach(({address, weight}) => { %>
+    <% split.targets.forEach(({id, address, weight}) => { %>
     <tr>
       <td><%- address %></td>
       <td><%- weight %></td>
       <td><%- ((weight/totalWeight)*100).toFixed(2) %>%</td>
-      <td><%- addressEstFee[address]/1000 %></td>
+      <td><%- split.targetFees[id]/1000 %></td>
     </tr>
     <% }) %>
   </tbody>
@@ -43,26 +43,55 @@
 <div class="h-stack flex-wrap">
   <div style="flex: 1 0">
     <h3>LNURL</h3>
-    <code><%- splitLnurlp %></code>
-    <br />
-    <a href="<%- splitLnurlp %>" target="_blank">
+    <a href="<%- split.lnurlp %>" target="_blank">
       <img
-        src="/split/<%- split.name %>/lnurl.svg"
+        src="/split/<%- split.id %>/lnurl.svg"
         alt="lnurlp qr code"
-        style="width: 100%; max-width: 4in"
+        style="width: 100%; max-width: 3in; min-width: 2in"
       />
     </a>
   </div>
   <div style="flex: 1 0">
     <h3>LN Address</h3>
-    <code><%- splitAddress %></code>
-    <br />
-    <a href="lightning:<%- splitAddress %>" target="_blank">
+    <a href="lightning:<%- split.address %>" target="_blank">
       <img
-        src="/split/<%- split.name %>/address.svg"
+        src="/split/<%- split.id %>/address.svg"
         alt="address qr code"
-        style="width: 100%; max-width: 4in"
+        style="width: 100%; max-width: 3in; min-width: 2in"
+      />
+    </a>
+  </div>
+  <div style="flex: 1 0">
+    <h3>Nostr</h3>
+    <a href="https://nostrapp.link/?#<%- split.nprofile %>" target="_blank">
+      <img
+        src="/split/<%- split.id %>/nostr.svg"
+        alt="nostr qr code"
+        style="width: 100%; max-width: 3in; min-width: 2in"
       />
     </a>
   </div>
 </div>
+
+<table style="white-space: nowrap">
+  <thead>
+    <tr>
+      <th>Id Type</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>LN Address</td>
+      <td><code><%- split.address %></code></td>
+    </tr>
+    <tr>
+      <td>Nostr</td>
+      <td><code><%- split.nprofile %></code></td>
+    </tr>
+    <tr>
+      <td>LNURL</td>
+      <td><code><%- split.lnurlp %></code></td>
+    </tr>
+  </tbody>
+</table>

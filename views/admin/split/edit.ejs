@@ -1,9 +1,6 @@
-<h1><%- splitAddress %></h1>
+<h1><%- split.address %></h1>
 
-<form
-  action="/admin/split/<%- split.name %>/edit/<%- payout.address %>"
-  method="post"
->
+<form action="/admin/split/<%- split.id %>/edit/<%- target.id %>" method="post">
   <label for="address">Add Address</label>
   <div class="h-stack flex-wrap">
     <input
@@ -13,7 +10,7 @@
       name="address"
       style="flex: 2; min-width: 2in"
       readonly
-      value="<%- payout.address %>"
+      value="<%- target.address %>"
     />
     <input
       class="mb-0"
@@ -25,7 +22,7 @@
       placeholder="weight"
       style="flex: 1; min-width: 1in"
       required
-      value="<%- payout.weight %>"
+      value="<%- target.weight %>"
     />
     <button class="button button-outline mb-0">Save</button>
   </div>

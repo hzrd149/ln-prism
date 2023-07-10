@@ -1,23 +1,24 @@
 import { fileURLToPath } from "url";
+import { resolve, dirname } from "path";
+import { createRequire } from "node:module";
+
 import Koa from "koa";
+import Router from "@koa/router";
 import cors from "@koa/cors";
 import ejs from "@koa/ejs";
-import { resolve, dirname } from "path";
 import staticFolder from "koa-static";
 import mount from "koa-mount";
 import { koaBody } from "koa-body";
-import publicRoutes from "./routes/public.js";
-import helperRoutes from "./routes/helpers.js";
-import adminRoutes from "./routes/admin.js";
-import apiRoutes from "./routes/api.js";
-import lnurlRoutes from "./routes/lnurl.js";
+
+import { publicRouter } from "./routes/public/index.js";
+import { adminRouter } from "./routes/admin/index.js";
+import { apiRouter } from "./routes/api/index.js";
+import { lnurlRouter } from "./routes/lnurl.js";
 import { setupParams } from "./routes/params.js";
-import webhookRoutes from "./routes/webhooks.js";
-import Router from "@koa/router";
-import { payNextPayout } from "./splits.js";
-import { db } from "./db.js";
-import { createRequire } from "node:module";
+import { webhookRouter } from "./routes/webhooks.js";
+
 import { PORT } from "./env.js";
+import { db } from "./db.js";
 
 const require = createRequire(import.meta.url);
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -48,8 +49,20 @@ app.use(async (ctx, next) => {
     if (401 == err.status) {
       ctx.status = 401;
       ctx.set("WWW-Authenticate", "Basic");
-      ctx.body = "cant haz that";
+
+      if (ctx.accepts(["html", "json"]) == "html") {
+        ctx.body = "cant haz that";
+      } else {
+        ctx.body = {
+          success: false,
+          status: err.status,
+          message: "cant haz that",
+        };
+      }
     } else {
+      if (Object.getPrototypeOf(err) === Error) {
+        console.log(err);
+      }
       ctx.status = err.statusCode || err.status || 500;
 
       if (ctx.accepts(["html", "json"]) == "html")
@@ -63,12 +76,11 @@ app.use(async (ctx, next) => {
 // router
 const router = new Router();
 setupParams(router);
-router.use(publicRoutes.routes(), publicRoutes.allowedMethods());
-router.use(helperRoutes.routes(), helperRoutes.allowedMethods());
-router.use(lnurlRoutes.routes(), lnurlRoutes.allowedMethods());
-router.use(adminRoutes.routes(), adminRoutes.allowedMethods());
-router.use(apiRoutes.routes(), apiRoutes.allowedMethods());
-router.use(webhookRoutes.routes(), webhookRoutes.allowedMethods());
+router.use(publicRouter.routes(), publicRouter.allowedMethods());
+router.use(webhookRouter.routes(), webhookRouter.allowedMethods());
+router.use(lnurlRouter.routes(), lnurlRouter.allowedMethods());
+router.use(adminRouter.routes(), adminRouter.allowedMethods());
+router.use(apiRouter.routes(), apiRouter.allowedMethods());
 
 app.use(router.routes()).use(router.allowedMethods());
 
@@ -76,7 +88,9 @@ app.listen(PORT);
 
 // payout splits ever 2 seconds
 setInterval(async () => {
-  await payNextPayout();
+  for (const split of db.data.splits) {
+    await split.payNext();
+  }
 }, 1000 * 2);
 
 // save database every 10 seconds

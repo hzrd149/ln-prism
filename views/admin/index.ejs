@@ -2,21 +2,21 @@
 <div class="card-grid">
   <% for( let split of splits ) { %>
   <div class="card" style="flex-shrink: 0; min-width: 40rem; flex: 0">
-    <div class="card-header"><%- split.name %>@<%- publicDomain %></div>
+    <div class="card-header"><%- split.address %></div>
     <div class="card-body">
       <ul style="margin-bottom: 0">
-        <% for( let {address, weight} of split.payouts ) { %>
+        <% for( let {address, weight} of split.targets ) { %>
         <li style="margin-bottom: 0"><%- address %> <%- weight %></li>
         <% } %>
       </ul>
     </div>
     <div class="card-footer h-stack">
-      <a class="button button-outline" href="/admin/split/<%- split.name %>"
+      <a class="button button-outline" href="/admin/split/<%- split.id %>"
         >Edit</a
       >
       <a
         class="button button-outline button-red"
-        href="/admin/split/<%- split.name %>/delete"
+        href="/admin/split/<%- split.id %>/delete"
       >
         Delete
       </a>

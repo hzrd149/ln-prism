@@ -1,4 +1,3 @@
-import { db } from "../db.js";
 import { LNURLpayRequest } from "../types.js";
 
 const addressMetadataCache = new Map<string, LNURLpayRequest>();
@@ -18,15 +17,4 @@ export async function getAddressMetadata(
     if (!metadata.callback) return;
     return metadata;
   } catch (e) {}
-}
-
-export function averageFee(address: string): number | undefined {
-  const fees = db.data.addressFees[address] || [];
-  if (fees.length === 0) return;
-  const avg = Math.round(fees.reduce((t, v) => t + v, 0) / fees.length);
-  return Number.isFinite(avg) ? avg : undefined;
-}
-
-export function estimatedFee(address: string) {
-  return averageFee(address) ?? 1000;
 }

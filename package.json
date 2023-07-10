@@ -6,7 +6,7 @@
   "typings": "./build/index.d.ts",
   "license": "MIT",
   "scripts": {
-    "generate-types": "openapi-typescript https://legend.lnbits.com/openapi.json -o src/lnbits/api.ts",
+    "generate-types": "openapi-typescript https://legend.lnbits.com/openapi.json -o src/lightning/lnbits/api.ts",
     "build": "tsc",
     "dev": "node development.mjs",
     "tunnel": "tmole 3000",
@@ -28,8 +28,9 @@
     "lowdb": "^6.0.1",
     "milligram": "^1.4.1",
     "nanoid": "^4.0.2",
-    "openapi-fetch": "^0.1.4",
-    "pngjs": "^7.0.0"
+    "nostr-tools": "^1.12.1",
+    "pngjs": "^7.0.0",
+    "ws": "^8.13.0"
   },
   "devDependencies": {
     "@types/koa": "^2.13.6",
