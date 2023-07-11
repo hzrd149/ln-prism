@@ -3,8 +3,8 @@ import { LightningBackend } from "../type.js";
 import { msatsToSats } from "../../helpers/sats.js";
 
 export type AuthData = {
-  email: string;
-  password: string;
+  email?: string;
+  password?: string;
   accessToken?: string;
   accessTokenExpiresAt?: Date;
   refreshToken?: string;
@@ -38,15 +38,19 @@ export class IBEXBackend implements LightningBackend {
     init?: RequestInit
   ) {
     const fullUrl = new URL(url, this.baseUrl);
+    const headers = {
+      ...init?.headers,
+      Accept: "application/json",
+      "User-Agent": "NodeJS",
+    };
+
+    if (init.body) {
+      headers["Content-Type"] = "application/json";
+    }
 
     return fetch(fullUrl, {
       ...init,
-      headers: {
-        ...init?.headers,
-        Accept: "application/json",
-        "Content-Type": "application/json",
-        "User-Agent": "NodeJS",
-      },
+      headers,
     }).then(async (res) => {
       if (res.headers.get("content-type").includes("application/json")) {
         const json: T | { Error: string } = await res.json();
@@ -161,5 +165,12 @@ export class IBEXBackend implements LightningBackend {
       paymentHash: result.transaction.payment.hash as string,
       fee: result.transaction.payment.feeMsat as number,
     };
+  }
+
+  async checkInvoiceComplete(hash: string): Promise<boolean> {
+    return false
+  }
+  async checkPaymentComplete(hash: string): Promise<boolean> {
+    return false
   }
 }

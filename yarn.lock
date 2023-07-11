@@ -79,19 +79,6 @@
     methods "^1.1.2"
     path-to-regexp "^6.2.1"
 
-"@lightninglabs/lnc-core@0.2.5-alpha":
-  version "0.2.5-alpha"
-  resolved "https://registry.yarnpkg.com/@lightninglabs/lnc-core/-/lnc-core-0.2.5-alpha.tgz#4150b9d8002a8dac582edc6216581feb2b613196"
-  integrity sha512-mdofMCydpNLAf0Abwy81FsuOMIrUqsxR5kZ9Qzjp+E7bZdMntsKY3p0oqq/y3o/6hfrKN7Ornht42Cebc/i9Iw==
-
-"@lightninglabs/lnc-web@^0.2.5-alpha":
-  version "0.2.5-alpha"
-  resolved "https://registry.yarnpkg.com/@lightninglabs/lnc-web/-/lnc-web-0.2.5-alpha.tgz#3677745b932bf376a39d138295049fc4cb126c9a"
-  integrity sha512-mbpeU0zUfqy1npHfuKX1snYZk1NtoY/EgrmtR7Y5QXl1IUw1KD6rxsrHzt7CgoNMQwBpFwvaN2RDWidebCz4Ig==
-  dependencies:
-    "@lightninglabs/lnc-core" "0.2.5-alpha"
-    crypto-js "4.1.1"
-
 "@noble/curves@1.0.0", "@noble/curves@~1.0.0":
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/@noble/curves/-/curves-1.0.0.tgz#e40be8c7daf088aaf291887cbc73f43464a92932"
@@ -764,11 +751,6 @@ core-util-is@~1.0.0:
   version "1.0.3"
   resolved "https://registry.yarnpkg.com/core-util-is/-/core-util-is-1.0.3.tgz#a6042d3634c2b27e9328f837b965fac83808db85"
   integrity sha512-ZQBvi1DcpJ4GDqanjucZ2Hj3wEO5pZDS89BWbkcrvdxksJorwUDDZamX9ldFkp9aw2lmBDLgkObEA4DWNJ9FYQ==
-
-crypto-js@4.1.1:
-  version "4.1.1"
-  resolved "https://registry.yarnpkg.com/crypto-js/-/crypto-js-4.1.1.tgz#9e485bcf03521041bd85844786b83fb7619736cf"
-  integrity sha512-o2JlM7ydqd3Qk9CA0L4NL6mTzU2sdx96a+oOfPu8Mkl/PK51vSyoi8/rQ8NknZtk44vq15lmhAj9CIAGwgeWKw==
 
 debug@^3.1.0, debug@^3.2.7:
   version "3.2.7"
