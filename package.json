@@ -8,7 +8,7 @@
   "scripts": {
     "generate-types": "openapi-typescript https://legend.lnbits.com/openapi.json -o src/lightning/lnbits/api.ts",
     "build": "tsc",
-    "dev": "node development.mjs",
+    "dev": "DEBUG=splitter:* node development.mjs",
     "tunnel": "tmole 3000",
     "format": "prettier -w . --ignore-path .gitignore",
     "start": "node build/index.js"
@@ -19,6 +19,7 @@
     "@koa/ejs": "^5.1.0",
     "@koa/router": "^12.0.0",
     "@scure/base": "^1.1.1",
+    "debug": "^4.3.4",
     "dotenv": "^16.0.3",
     "koa": "^2.14.2",
     "koa-basic-auth": "^4.0.0",
@@ -33,6 +34,7 @@
     "ws": "^8.13.0"
   },
   "devDependencies": {
+    "@types/debug": "^4.1.8",
     "@types/koa": "^2.13.6",
     "@types/koa-basic-auth": "^2.0.4",
     "@types/koa-static": "^4.0.2",

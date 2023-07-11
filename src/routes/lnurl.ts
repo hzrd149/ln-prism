@@ -23,7 +23,6 @@ export function buildLNURLpMetadata(split: Split): LNURLPayMetadata {
 lnurlRouter.get(
   ["/lnurlp/:splitName", "/.well-known/lnurlp/:splitName"],
   async (ctx) => {
-    console.log(ctx.href);
     const split = ctx.state.split as Split;
     const metadata = buildLNURLpMetadata(split);
 
@@ -39,8 +38,6 @@ lnurlRouter.get(
 );
 
 lnurlRouter.get("/lnurlp-callback/:splitName", async (ctx) => {
-  console.log(ctx.href);
-
   try {
     const split = ctx.state.split as Split;
     const amount = parseInt(ctx.query.amount as string);

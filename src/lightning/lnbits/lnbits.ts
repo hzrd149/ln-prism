@@ -1,6 +1,7 @@
+import debug from "debug";
+import { createHash } from "node:crypto";
 import { msatsToSats } from "../../helpers/sats.js";
 import { LightningBackend } from "../type.js";
-import { createHash } from "node:crypto";
 
 export default class LNBitsBackend implements LightningBackend {
   url: string;
@@ -11,6 +12,7 @@ export default class LNBitsBackend implements LightningBackend {
     this.adminKey = adminKey;
   }
 
+  private log = debug("splitter:lnbits");
   private request<T = any>(url: string, opts?: RequestInit) {
     return fetch(new URL(url, this.url), {
       ...opts,
@@ -23,6 +25,16 @@ export default class LNBitsBackend implements LightningBackend {
         return res.json() as Promise<T>;
       else throw new Error("Expected JSON");
     });
+  }
+
+  async setup() {
+    const result = await this.request("/api/v1/wallet");
+
+    this.log(
+      `Connected to wallet "${result.name}" with ${msatsToSats(
+        result.balance
+      )} sats`
+    );
   }
 
   async createInvoice(

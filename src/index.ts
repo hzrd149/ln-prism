@@ -99,7 +99,6 @@ setInterval(() => {
 }, 1000 * 10);
 
 async function shutdown() {
-  console.log("saving database");
   await db.write();
   process.exit();
 }

@@ -8,6 +8,7 @@ type PaymentDetails = {
 };
 
 export interface LightningBackend {
+  setup(): Promise<void>;
   createInvoice(
     amount: number,
     description?: string,

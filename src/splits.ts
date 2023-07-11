@@ -16,6 +16,7 @@ import { connect, relayPool } from "./relay-pool.js";
 import { BadRequestError, ConflictError } from "./helpers/errors.js";
 import { averageFee, estimatedFee, recordFee } from "./fees.js";
 import { getInvoiceFromLNAddress } from "./helpers/lnurl.js";
+import debug, { Debugger } from "debug";
 
 type SplitTarget = {
   id: string;
@@ -45,12 +46,15 @@ export class Split {
   targets: SplitTarget[] = [];
   pending: PendingInvoice[] = [];
   payouts: PendingPayout[] = [];
+  log: Debugger;
 
   constructor(name: string, domain: string, privateKey?: string) {
     this.id = nanoid();
     this.privateKey = privateKey || generatePrivateKey();
     this.domain = domain;
     this.name = name;
+
+    this.log = debug('splitter:'+this.address);
   }
 
   get address() {
@@ -183,10 +187,6 @@ export class Split {
 
     Object.assign(target, fields);
     await this.updateNostrProfile();
-  }
-
-  private log(...args: any[]) {
-    console.log(`${this.address}:`, ...args);
   }
 
   async createInvoice(

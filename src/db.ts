@@ -4,10 +4,12 @@ import { Low } from "lowdb";
 import { JSONFile } from "lowdb/node";
 import { DB_PATH } from "./env.js";
 import { Split } from "./splits.js";
+import debug from "debug";
 
+const log = debug('splitter:db');
 const file = isAbsolute(DB_PATH) ? DB_PATH : resolve(process.cwd(), DB_PATH);
 
-console.log(`Using ${file}`);
+log(`Using ${file}`);
 
 type Schema = {
   splits: Split[];
