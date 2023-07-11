@@ -6,7 +6,7 @@ import { DB_PATH } from "./env.js";
 import { Split } from "./splits.js";
 import debug from "debug";
 
-const log = debug('splitter:db');
+const log = debug("splitter:db");
 const file = isAbsolute(DB_PATH) ? DB_PATH : resolve(process.cwd(), DB_PATH);
 
 log(`Using ${file}`);
@@ -32,12 +32,12 @@ db.data.addressFees = db.data.addressFees || {};
 
 // load
 db.data.splits = db.data.splits.map(
-  ({ id, name, domain, targets, privateKey, pending }) => {
+  ({ id, name, domain, targets, privateKey, invoices }) => {
     const split = new Split(name, domain);
     split.id = id;
     split.targets = targets;
     split.privateKey = privateKey;
-    split.pending = pending;
+    split.invoices = invoices;
     return split;
   }
 );

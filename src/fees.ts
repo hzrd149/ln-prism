@@ -2,7 +2,7 @@ import { db } from "./db.js";
 
 export function recordFee(address: string, fee: number) {
   db.data.addressFees[address] = db.data.addressFees[address] || [];
-  db.data.addressFees[address].push(fee);
+  db.data.addressFees[address].push(Math.max(fee, 0));
 }
 
 export function averageFee(address: string): number | undefined {

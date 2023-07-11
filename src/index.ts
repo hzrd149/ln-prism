@@ -93,6 +93,15 @@ setInterval(async () => {
   }
 }, 1000 * 2);
 
+// manually check invoices ever 5 seconds
+async function manualCheck() {
+  for (const split of db.data.splits) {
+    await split.manualCheck();
+  }
+  setTimeout(manualCheck, 1000 * 10);
+}
+manualCheck();
+
 // save database every 10 seconds
 setInterval(() => {
   db.write();

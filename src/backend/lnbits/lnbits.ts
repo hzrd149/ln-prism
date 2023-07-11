@@ -21,9 +21,17 @@ export default class LNBitsBackend implements LightningBackend {
         "X-Api-Key": this.adminKey,
       },
     }).then((res) => {
-      if (res.headers.get("content-type") === "application/json")
-        return res.json() as Promise<T>;
-      else throw new Error("Expected JSON");
+      if (res.headers.get("content-type") === "application/json") {
+        const result = res.json() as Promise<T>;
+
+        //@ts-ignore
+        if (!res.ok && result.detail !== undefined) {
+          //@ts-ignore
+          throw new Error("LNBits:" + result.detail);
+        }
+
+        return result;
+      } else throw new Error("Expected JSON");
     });
   }
 
@@ -63,9 +71,6 @@ export default class LNBitsBackend implements LightningBackend {
       headers: { "content-type": "application/json" },
     });
 
-    if (result.detail !== undefined)
-      throw new Error("Failed to create invoice: " + result.detail);
-
     return {
       paymentHash: result.payment_hash as string,
       paymentRequest: result.payment_request as string,
@@ -82,9 +87,6 @@ export default class LNBitsBackend implements LightningBackend {
       headers: { "content-type": "application/json" },
     });
 
-    if (result.detail !== undefined)
-      throw new Error("Failed to pay invoice: " + result.detail);
-
     const paymentDetails = await this.request(
       `/api/v1/payments/${result.payment_hash}`
     );
@@ -93,5 +95,20 @@ export default class LNBitsBackend implements LightningBackend {
       paymentHash: result.payment_hash as string,
       fee: paymentDetails.details.fee as number,
     };
+  }
+
+  async checkInvoiceComplete(hash: string) {
+    try {
+      const result = await this.request(`/api/v1/payments/${hash}`);
+      return result.paid as boolean;
+    } catch (e) {}
+    return false;
+  }
+  async checkPaymentComplete(hash: string) {
+    try {
+      const result = await this.request(`/api/v1/payments/${hash}`);
+      return result.paid as boolean;
+    } catch (e) {}
+    return false;
   }
 }

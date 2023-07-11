@@ -8,6 +8,7 @@ import {
 } from "../env.js";
 import { IBEXBackend } from "./ibex/ibex.js";
 import LNBitsBackend from "./lnbits/lnbits.js";
+import { LightningBackend } from "./type.js";
 
 function createBackend() {
   if (LNBITS_URL && LNBITS_ADMIN_KEY) {
@@ -27,7 +28,7 @@ function createBackend() {
   throw new Error("No lightning backend configured");
 }
 
-const lightning = createBackend();
+const lightning: LightningBackend = createBackend();
 await lightning.setup();
 
 export { lightning };

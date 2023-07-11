@@ -44,7 +44,7 @@ export class Split {
   name: string;
   domain: string;
   targets: SplitTarget[] = [];
-  pending: PendingInvoice[] = [];
+  invoices: PendingInvoice[] = [];
   payouts: PendingPayout[] = [];
   log: Debugger;
 
@@ -88,8 +88,11 @@ export class Split {
   }
 
   async updateNostrProfile() {
-    const targets = getTargetPercentages(this.targets)
-      .map((t) => `${t.address}: ${t.percent.toFixed(2)}%`)
+    const targets = this.targets
+      .map(
+        (t) =>
+          `${t.address}: ${((t.weight / this.totalWeight) * 100).toFixed(2)}%`
+      )
       .join("\n");
 
     const metadata = {
@@ -201,7 +204,9 @@ export class Split {
       `https://${this.domain}/webhook/${this.id}/${id}`
     );
 
-    this.pending.push({
+    if (!invoice.paymentHash) throw new Error("missing paymentHash");
+
+    this.invoices.push({
       id,
       amount,
       paymentHash: invoice.paymentHash,
@@ -212,19 +217,20 @@ export class Split {
   }
 
   async handleInvoicePaid(id: string) {
-    const pending = this.pending.find((p) => p.id === id);
-    const totalWeight = this.totalWeight;
+    const invoice = this.invoices.find((p) => p.id === id);
+    this.invoices = this.invoices.filter((p) => p.id !== id);
 
-    this.log(`Received ${msatsToSats(pending.amount)} sats`);
+    const totalWeight = this.totalWeight;
+    this.log(`Received ${msatsToSats(invoice.amount)} sats`);
 
     for (const { address, weight } of this.targets) {
-      const payoutAmount = Math.round((weight / totalWeight) * pending.amount);
+      const payoutAmount = Math.round((weight / totalWeight) * invoice.amount);
 
       const payout: PendingPayout = {
         address,
         weight,
         amount: payoutAmount,
-        lnurlComment: pending.lnurlComment,
+        lnurlComment: invoice.lnurlComment,
       };
 
       this.payouts.push(payout);
@@ -275,6 +281,18 @@ export class Split {
       this.payouts.push(payout);
     }
   }
+
+  // manually check if pending invoices are complete
+  async manualCheck() {
+    for (const { paymentHash, id } of this.invoices) {
+      this.log(`Checking ${paymentHash}`);
+      const complete = await lightning.checkInvoiceComplete(paymentHash);
+
+      if (complete) {
+        await this.handleInvoicePaid(id);
+      }
+    }
+  }
 }
 
 export async function createSplit(
@@ -300,12 +318,4 @@ export function getSplitById(splitId: string) {
 }
 export function getSplitByName(name: string, domain: string) {
   return db.data.splits.find((s) => s.name === name && s.domain === domain);
-}
-
-// old
-function getTargetPercentages(
-  targets: SplitTarget[]
-): (SplitTarget & { percent: number })[] {
-  const totalWeight = targets.reduce((v, t) => v + t.weight, 0);
-  return targets.map((t) => ({ ...t, percent: t.weight / totalWeight }));
 }
