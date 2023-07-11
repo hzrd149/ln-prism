@@ -10,13 +10,13 @@ import { db } from "./db.js";
 import { satsToMsats, roundToSats, msatsToSats } from "./helpers/sats.js";
 import { nanoid } from "nanoid";
 import { getAddressMetadata } from "./helpers/ln-address.js";
-import lnbits from "./lightning/lnbits/index.js";
 import { nowUnix } from "./helpers/nostr.js";
 import { connect, relayPool } from "./relay-pool.js";
 import { BadRequestError, ConflictError } from "./helpers/errors.js";
 import { averageFee, estimatedFee, recordFee } from "./fees.js";
 import { getInvoiceFromLNAddress } from "./helpers/lnurl.js";
 import debug, { Debugger } from "debug";
+import { lightning } from "./backend/index.js";
 
 type SplitTarget = {
   id: string;
@@ -54,7 +54,7 @@ export class Split {
     this.domain = domain;
     this.name = name;
 
-    this.log = debug('splitter:'+this.address);
+    this.log = debug("splitter:" + this.address);
   }
 
   get address() {
@@ -195,7 +195,7 @@ export class Split {
     lnurlComment?: string
   ) {
     const id = nanoid();
-    const invoice = await lnbits.createInvoice(
+    const invoice = await lightning.createInvoice(
       amount,
       description,
       `https://${this.domain}/webhook/${this.id}/${id}`
@@ -256,7 +256,7 @@ export class Split {
         payout.lnurlComment
       );
 
-      const { paymentHash, fee } = await lnbits.payInvoice(payRequest);
+      const { paymentHash, fee } = await lightning.payInvoice(payRequest);
 
       recordFee(payout.address, fee);
 

@@ -21,8 +21,7 @@ All configuration is done through environment variables
 - `DB_PATH` the path to the json file where data will be stored (default `./splits.json`)
 - `PORT` http server port (default `3000`)
 - `LNBITS_URL` URL to the lnbits instance ( this can be a local address, eg `http://192.168.1.100:8000` or `http://umbrel.local:3007` )
-- `WALLET_ID` The id of the lnbits wallet
-- `ADMIN_KEY` The admin key for the wallet, used to create and pay invoices
+- `LNBITS_ADMIN_KEY` The admin key for the wallet, used to create and pay invoices
 - `LOGIN_USER` The username for the `/admin` dashboard (default `admin`)
 - `LOGIN_PASSWORD` The password for the `/admin` (if its not set then the `/admin` routes will be publicly accessible)
 
@@ -59,8 +58,7 @@ docker run --rm -it \
 	-v $(pwd)/data:/data \
 	-e DB_PATH=/data/splits.json \
 	-e LNBITS_URL="https://legend.lnbits.com" \
-	-e WALLET_ID="<lnbits wallet id>" \
-	-e ADMIN_KEY="<lnbits admin key>" \
+	-e LNBITS_ADMIN_KEY="<lnbits admin key>" \
 	-e LOGIN_USER=admin \
 	-e LOGIN_PASSWORD=changeme \
 	ghcr.io/hzrd149/ln-address-splitter
