@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { fileURLToPath } from "url";
 import { resolve, dirname } from "path";
 import { createRequire } from "node:module";
