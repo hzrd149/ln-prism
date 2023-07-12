@@ -1,29 +1,27 @@
-<h1><%- split.address %></h1>
+<h1>Create Split</h1>
 
-<form action="/admin/split/<%- split.id %>/edit/<%- target.id %>" method="post">
-  <label for="address">Add Address</label>
-  <div class="h-stack flex-wrap">
-    <input
-      class="mb-0"
-      type="email"
-      id="address"
-      name="address"
-      style="flex: 2; min-width: 2in"
-      readonly
-      value="<%- target.address %>"
-    />
-    <input
-      class="mb-0"
-      type="number"
-      name="weight"
-      min="1"
-      size="3"
-      step="1"
-      placeholder="weight"
-      style="flex: 1; min-width: 1in"
-      required
-      value="<%- target.weight %>"
-    />
-    <button class="button button-outline mb-0">Save</button>
+<form action="/admin/split/<%- split.id %>/edit" method="post">
+  <div class="h-stack">
+    <div style="flex: 1">
+      <label for="name">Name</label>
+      <input
+        type="text"
+        id="name"
+        name="name"
+        required
+        value="<%- split.name %>"
+      />
+    </div>
+    <div style="flex: 1">
+      <label for="domain">Domain</label>
+      <input
+        type="text"
+        id="domain"
+        name="domain"
+        required
+        value="<%- split.domain %>"
+      />
+    </div>
   </div>
+  <button class="button button-outline">Save</button>
 </form>
