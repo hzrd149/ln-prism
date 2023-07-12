@@ -1,11 +1,6 @@
 import "dotenv/config";
 
-function missing(env: string) {
-  throw new Error(`Missing ${env}`);
-  return "";
-}
-
-export const DB_PATH = process.env.DB_PATH || missing("DB_PATH");
+export const DB_PATH = process.env.DB_PATH || "./splits.json";
 export const PORT = process.env.PORT || "3000";
 
 // lnbits
