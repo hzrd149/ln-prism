@@ -13,12 +13,13 @@
     "bin"
   ],
   "scripts": {
-    "generate-types": "openapi-typescript https://legend.lnbits.com/openapi.json -o src/lightning/lnbits/api.ts",
     "build": "tsc",
     "dev": "DEBUG=prism:* node development.mjs",
+    "start": "node build/index.js",
     "tunnel": "tmole 3000",
     "format": "prettier -w . --ignore-path .gitignore",
-    "start": "node build/index.js"
+    "prerelease": "tsc",
+    "release": "changeset publish"
   },
   "dependencies": {
     "@fontsource/roboto": "^5.0.1",
@@ -50,7 +51,6 @@
     "@types/koa__router": "^12.0.0",
     "@types/pngjs": "^6.0.1",
     "nodemon": "^2.0.22",
-    "openapi-typescript": "^6.2.4",
     "prettier": "^2.8.8",
     "shelljs": "^0.8.5",
     "tunnelmole": "^2.1.10",
