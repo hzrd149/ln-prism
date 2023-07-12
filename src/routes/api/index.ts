@@ -1,9 +1,10 @@
 import Router from "@koa/router";
 import { db } from "../../db.js";
-import { getAddressMetadata } from "../../helpers/ln-address.js";
+import { getAddressMetadata } from "../../helpers/lightning-address.js";
 import { Split, createSplit, removeSplit } from "../../splits.js";
 import { LOGIN_PASSWORD, LOGIN_USER } from "../../env.js";
 import { BadRequestError, ConflictError } from "../../helpers/errors.js";
+import { StateWithSplit } from "../params.js";
 
 const { default: auth } = await import("koa-basic-auth");
 
@@ -42,14 +43,14 @@ apiRouter.post("/api/split", async (ctx) => {
 });
 
 // get split
-apiRouter.get("/api/split/:splitId", (ctx) => {
-  const split = ctx.state.split as Split;
+apiRouter.get<StateWithSplit>("/api/split/:splitId", (ctx) => {
+  const split = ctx.state.split;
   ctx.body = formatSplit(split);
 });
 
 // delete
-apiRouter.delete("/api/split/:splitId", async (ctx) => {
-  const split = ctx.state.split as Split;
+apiRouter.delete<StateWithSplit>("/api/split/:splitId", async (ctx) => {
+  const split = ctx.state.split;
   await removeSplit(split.id);
 
   ctx.status = 200;
@@ -59,8 +60,8 @@ apiRouter.delete("/api/split/:splitId", async (ctx) => {
 });
 
 // update split
-apiRouter.patch("/api/split/:splitId", async (ctx) => {
-  const split = ctx.state.split as Split;
+apiRouter.patch<StateWithSplit>("/api/split/:splitId", async (ctx) => {
+  const split = ctx.state.split;
 
   if (ctx.request.body.targets) {
     const targets = ctx.request.body.targets as {

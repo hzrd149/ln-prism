@@ -1,12 +1,12 @@
 import Router from "@koa/router";
 import { deleteSplitRouter } from "./delete.js";
 import { splitAddressRouter } from "./target.js";
-import { Split } from "../../../splits.js";
+import { StateWithSplit } from "../../params.js";
 
 export const adminSplitRouter = new Router();
 
-adminSplitRouter.get("/admin/split/:splitId", (ctx) => {
-  const split = ctx.state.split as Split;
+adminSplitRouter.get<StateWithSplit>("/admin/split/:splitId", (ctx) => {
+  const split = ctx.state.split;
 
   ctx.state.ogTitle = split.address;
 

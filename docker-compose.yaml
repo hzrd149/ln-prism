@@ -1,9 +1,9 @@
 version: "3"
 
 services:
-  ln-address-spliter:
+  ln-prism:
     build: .
-    image: ghcr.io/hzrd149/ln-address-splitter
+    image: ghcr.io/hzrd149/ln-prism
     ports:
       - 3000:3000/tcp
     environment:

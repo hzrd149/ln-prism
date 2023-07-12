@@ -1,13 +1,23 @@
 import Router from "@koa/router";
 import { NotFountError } from "../helpers/errors.js";
-import { getSplitById, getSplitByName } from "../splits.js";
+import { Split, getSplitById, getSplitByName } from "../splits.js";
+
+export type CustomState = {
+  ogTitle: string;
+  ogDescription: string;
+  ogUrl: string;
+  ogImage: string;
+};
+export type StateWithSplit = CustomState & {
+  split: Split;
+};
 
 export function setupParams(router: Router) {
   router.use((ctx, next) => {
     ctx.state.path = ctx.path;
     ctx.state.hostname = ctx.hostname;
 
-    ctx.state.ogTitle = "LN Address Splitter";
+    ctx.state.ogTitle = "LN Prism";
     ctx.state.ogDescription = "A simple lightning prisim server";
     ctx.state.ogUrl = "https://" + ctx.hostname;
     ctx.state.ogImage = new URL("/icon.svg", ctx.origin);
@@ -15,7 +25,7 @@ export function setupParams(router: Router) {
     return next();
   });
 
-  router.param("splitName", async (name, ctx, next) => {
+  router.param<{ splitName: string }>("splitName", async (name, ctx, next) => {
     const split = getSplitByName(name, ctx.hostname);
 
     if (!split)
@@ -25,7 +35,7 @@ export function setupParams(router: Router) {
 
     return next();
   });
-  router.param("splitId", async (id, ctx, next) => {
+  router.param<{ splitId: string }>("splitId", async (id, ctx, next) => {
     const split = getSplitById(id);
 
     if (!split) throw new NotFountError(id + " dose not exist");

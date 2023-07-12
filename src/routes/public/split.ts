@@ -1,15 +1,15 @@
 import { satsToMsats, msatsToSats } from "../../helpers/sats.js";
 import { BadRequestError } from "../../helpers/errors.js";
 import Router from "@koa/router";
-import { Split } from "../../splits.js";
 import { estimatedFee } from "../../fees.js";
+import { StateWithSplit } from "../params.js";
 
 export const splitRouter = new Router();
 
 splitRouter.get("/", (ctx) => ctx.render("index"));
 
-splitRouter.get("/split/:splitName", async (ctx) => {
-  const split = ctx.state.split as Split;
+splitRouter.get<StateWithSplit>("/split/:splitName", async (ctx) => {
+  const split = ctx.state.split;
 
   await ctx.render("split/index", {
     totalWeight: split.targets.reduce((v, p) => v + p.weight, 0),
@@ -23,8 +23,8 @@ splitRouter.get("/split/:splitName", async (ctx) => {
   });
 });
 
-splitRouter.get("/split/:splitName/invoice", async (ctx) => {
-  const split = ctx.state.split as Split;
+splitRouter.get<StateWithSplit>("/split/:splitName/invoice", async (ctx) => {
+  const split = ctx.state.split;
 
   const amount = parseInt(ctx.query.amount as string);
   if (!amount) throw new BadRequestError("missing amount");

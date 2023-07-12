@@ -12,7 +12,7 @@ export default class LNBitsBackend implements LightningBackend {
     this.adminKey = adminKey;
   }
 
-  private log = debug("splitter:lnbits");
+  private log = debug("prism:lnbits");
   private request<T = any>(url: string, opts?: RequestInit) {
     return fetch(new URL(url, this.url), {
       ...opts,

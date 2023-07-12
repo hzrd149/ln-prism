@@ -16,7 +16,7 @@ export class IBEXBackend implements LightningBackend {
   accountId: string;
 
   auth: AuthData;
-  private log = debug("splitter:ibex");
+  private log = debug("prism:ibex");
 
   constructor(accountId: string, auth: AuthData) {
     this.accountId = accountId;
@@ -168,9 +168,9 @@ export class IBEXBackend implements LightningBackend {
   }
 
   async checkInvoiceComplete(hash: string): Promise<boolean> {
-    return false
+    return false;
   }
   async checkPaymentComplete(hash: string): Promise<boolean> {
-    return false
+    return false;
   }
 }

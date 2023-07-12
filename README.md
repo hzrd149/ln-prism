@@ -1,10 +1,10 @@
-# LN-Address-Splitter
+# ln-prism
 
-![image](https://github.com/hzrd149/ln-address-splitter/assets/8001706/d75f1268-9046-4d3a-9a44-da7fc0985252)
+![image](https://github.com/hzrd149/ln-prism/assets/8001706/d75f1268-9046-4d3a-9a44-da7fc0985252)
 
 ```mermaid
 flowchart TD
-    A["test@split.example.com"] -->|LNRUL pay| C{Splitter}
+    A["test@split.example.com"] -->|LNRUL pay| C{Prism}
     C -->|25%| D["bob@getalby.com"]
     C -->|25%| E["joe@walletofsatoshi.com"]
     C -->|50%| F["guy@strike.army"]
@@ -32,8 +32,8 @@ All configuration is done through environment variables
 If you dont have either installing via [nvm](https://github.com/nvm-sh/nvm) is probably the easiest way to set them up
 
 ```bash
-git clone https://github.com/hzrd149/ln-address-splitter.git
-cd ln-address-splitter
+git clone https://github.com/hzrd149/ln-prism.git
+cd ln-prism
 # install dependencies
 yarn install
 yarn build
@@ -53,7 +53,7 @@ yarn start
 
 ```bash
 docker run --rm -it \
-	--name ln-address-splitter
+	--name ln-prism
 	-p 3000:3000 \
 	-v $(pwd)/data:/data \
 	-e DB_PATH=/data/splits.json \
@@ -61,7 +61,7 @@ docker run --rm -it \
 	-e LNBITS_ADMIN_KEY="<lnbits admin key>" \
 	-e LOGIN_USER=admin \
 	-e LOGIN_PASSWORD=changeme \
-	ghcr.io/hzrd149/ln-address-splitter
+	ghcr.io/hzrd149/ln-prism
 ```
 
 Then you can open [http://localhost:3000/admin](http://localhost:3000/admin)

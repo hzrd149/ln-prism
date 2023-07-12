@@ -4,8 +4,8 @@ import {
   ConflictError,
   NotFountError,
 } from "../../../helpers/errors.js";
-import { getAddressMetadata } from "../../../helpers/ln-address.js";
-import { Split } from "../../../splits.js";
+import { getAddressMetadata } from "../../../helpers/lightning-address.js";
+import { StateWithSplit } from "../../params.js";
 
 export const splitAddressRouter = new Router();
 
@@ -13,55 +13,72 @@ export const splitAddressRouter = new Router();
 splitAddressRouter.get("/admin/split/:splitId/add", (ctx) =>
   ctx.render("admin/split/add")
 );
-splitAddressRouter.post("/admin/split/:splitId/add", async (ctx) => {
-  const split = ctx.state.split as Split;
-  const address = ctx.request.body.address;
-  const weight = parseInt(ctx.request.body.weight);
+splitAddressRouter.post<StateWithSplit>(
+  "/admin/split/:splitId/add",
+  async (ctx) => {
+    const split = ctx.state.split;
+    const address = ctx.request.body.address;
+    const weight = parseInt(ctx.request.body.weight);
 
-  if (split.targets.find((p) => p.address === address))
-    throw new ConflictError("That address already exists");
+    if (split.targets.find((p) => p.address === address))
+      throw new ConflictError("That address already exists");
 
-  // test address
-  if (!(await getAddressMetadata(address)))
-    throw new BadRequestError(`Unreachable address ${address}`);
+    // test address
+    if (!(await getAddressMetadata(address)))
+      throw new BadRequestError(`Unreachable address ${address}`);
 
-  if (address && weight) {
-    await split.addTarget(address, weight);
+    if (address && weight) {
+      await split.addTarget(address, weight);
+    }
+
+    await ctx.redirect(`/admin/split/${split.id}`);
   }
-
-  await ctx.redirect(`/admin/split/${split.id}`);
-});
+);
 
 // edit address
-splitAddressRouter.get("/admin/split/:splitId/edit/:id", (ctx) => {
-  const split = ctx.state.split as Split;
-  const target = split.targets.find((target) => target.id === ctx.params.id);
-  if (!target) throw new NotFountError("No payout with that address");
-  return ctx.render("admin/split/edit", { target });
-});
-splitAddressRouter.post("/admin/split/:splitId/edit/:id", async (ctx) => {
-  const split = ctx.state.split as Split;
-  const address = ctx.request.body.address;
-  const weight = parseInt(ctx.request.body.weight);
+splitAddressRouter.get<StateWithSplit>(
+  "/admin/split/:splitId/edit/:id",
+  (ctx) => {
+    const split = ctx.state.split;
+    const target = split.targets.find((target) => target.id === ctx.params.id);
+    if (!target) throw new NotFountError("No payout with that address");
+    return ctx.render("admin/split/edit", { target });
+  }
+);
+splitAddressRouter.post<StateWithSplit>(
+  "/admin/split/:splitId/edit/:id",
+  async (ctx) => {
+    const split = ctx.state.split;
+    const address = ctx.request.body.address;
+    const weight = parseInt(ctx.request.body.weight);
 
-  await split.updateTarget(ctx.params.id, {address, weight})
+    await split.updateTarget(ctx.params.id, { address, weight });
 
-  await ctx.redirect(`/admin/split/${split.id}`);
-});
+    await ctx.redirect(`/admin/split/${split.id}`);
+  }
+);
 
 // remove address
-splitAddressRouter.get("/admin/split/:splitId/remove/:id", async (ctx) => {
-  const split = ctx.state.split as Split;
-  const target = split.getTarget(ctx.params.id);
+splitAddressRouter.get<StateWithSplit>(
+  "/admin/split/:splitId/remove/:id",
+  async (ctx) => {
+    const split = ctx.state.split;
+    const target = split.getTarget(ctx.params.id);
 
-  if (!target)
-    throw new NotFountError(`No target ${ctx.params.id} on ${split.address}`);
+    if (!target)
+      throw new NotFountError(`No target ${ctx.params.id} on ${split.address}`);
 
-  await ctx.render("admin/split/remove", { target });
-});
-splitAddressRouter.post("/admin/split/:splitId/remove/:id", async (ctx) => {
-  const split = ctx.state.split as Split;
-  split.targets = split.targets.filter((target) => target.id !== ctx.params.id);
+    await ctx.render("admin/split/remove", { target });
+  }
+);
+splitAddressRouter.post<StateWithSplit>(
+  "/admin/split/:splitId/remove/:id",
+  async (ctx) => {
+    const split = ctx.state.split;
+    split.targets = split.targets.filter(
+      (target) => target.id !== ctx.params.id
+    );
 
-  await ctx.redirect(`/admin/split/${split.id}`);
-});
+    await ctx.redirect(`/admin/split/${split.id}`);
+  }
+);

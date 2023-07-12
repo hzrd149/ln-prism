@@ -3,6 +3,7 @@ import Router from "@koa/router";
 import { roundToSats } from "../helpers/sats.js";
 import { LNURLPayMetadata, LNURLpayRequest } from "../types.js";
 import { BadRequestError } from "../helpers/errors.js";
+import { StateWithSplit } from "./params.js";
 
 export const lnurlRouter = new Router();
 
@@ -20,10 +21,10 @@ export function buildLNURLpMetadata(split: Split): LNURLPayMetadata {
   ];
 }
 
-lnurlRouter.get(
+lnurlRouter.get<StateWithSplit>(
   ["/lnurlp/:splitName", "/.well-known/lnurlp/:splitName"],
   async (ctx) => {
-    const split = ctx.state.split as Split;
+    const split = ctx.state.split;
     const metadata = buildLNURLpMetadata(split);
 
     ctx.body = {
@@ -37,9 +38,9 @@ lnurlRouter.get(
   }
 );
 
-lnurlRouter.get("/lnurlp-callback/:splitName", async (ctx) => {
+lnurlRouter.get<StateWithSplit>("/lnurlp-callback/:splitName", async (ctx) => {
   try {
-    const split = ctx.state.split as Split;
+    const split = ctx.state.split;
     const amount = parseInt(ctx.query.amount as string);
     const metadata = buildLNURLpMetadata(split);
     const comment = ctx.query.comment as string | undefined;

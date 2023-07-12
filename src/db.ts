@@ -6,7 +6,7 @@ import { DB_PATH } from "./env.js";
 import { Split } from "./splits.js";
 import debug from "debug";
 
-const log = debug("splitter:db");
+const log = debug("prism:db");
 const file = isAbsolute(DB_PATH) ? DB_PATH : resolve(process.cwd(), DB_PATH);
 
 log(`Using ${file}`);

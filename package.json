@@ -1,6 +1,6 @@
 {
-  "name": "lnsplit",
-  "version": "1.0.0",
+  "name": "@hzrd149/ln-prism",
+  "version": "0.1.0",
   "type": "module",
   "main": "./build/index.js",
   "typings": "./build/index.d.ts",
@@ -8,7 +8,7 @@
   "scripts": {
     "generate-types": "openapi-typescript https://legend.lnbits.com/openapi.json -o src/lightning/lnbits/api.ts",
     "build": "tsc",
-    "dev": "DEBUG=splitter:* node development.mjs",
+    "dev": "DEBUG=prism:* node development.mjs",
     "tunnel": "tmole 3000",
     "format": "prettier -w . --ignore-path .gitignore",
     "start": "node build/index.js"

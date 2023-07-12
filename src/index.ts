@@ -84,7 +84,7 @@ router.use(apiRouter.routes(), apiRouter.allowedMethods());
 
 app.use(router.routes()).use(router.allowedMethods());
 
-app.listen(PORT);
+app.listen(PORT || 3000);
 
 // payout splits ever 2 seconds
 setInterval(async () => {
