@@ -4,6 +4,7 @@
     "target": "ESNext",
     "moduleResolution": "nodenext",
     "module": "ESNext",
-    "outDir": "build"
+    "outDir": "build",
+    "removeComments": false
   }
 }
