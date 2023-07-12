@@ -1,16 +1,23 @@
 import Router from "@koa/router";
-import { removeSplit } from "../../../splits.js";
 import { StateWithSplit } from "../../params.js";
+import { BadRequestError } from "../../../helpers/errors.js";
 
-export const deleteSplitRouter = new Router();
+export const editSplitRouter = new Router();
 
-deleteSplitRouter.get<StateWithSplit>("/admin/split/:splitId/edit", (ctx) =>
+editSplitRouter.get<StateWithSplit>("/admin/split/:splitId/edit", (ctx) =>
   ctx.render("admin/split/edit")
 );
-deleteSplitRouter.post<StateWithSplit>(
+editSplitRouter.post<StateWithSplit>(
   "/admin/split/:splitId/edit",
   async (ctx) => {
-    await removeSplit(ctx.state.split.id);
-    await ctx.redirect("/admin");
+    const split = ctx.state.split;
+    const name = ctx.request.body.name as string;
+    const domain = ctx.request.body.domain as string;
+    if (!name || !domain) throw new BadRequestError();
+
+    split.name = name;
+    split.domain = domain;
+
+    await ctx.redirect(`/admin/split/${split.id}`);
   }
 );

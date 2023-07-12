@@ -11,7 +11,7 @@ export const splitAddressRouter = new Router();
 
 // add address
 splitAddressRouter.get("/admin/split/:splitId/add", (ctx) =>
-  ctx.render("admin/split/add")
+  ctx.render("admin/split/target/add")
 );
 splitAddressRouter.post<StateWithSplit>(
   "/admin/split/:splitId/add",
@@ -42,7 +42,7 @@ splitAddressRouter.get<StateWithSplit>(
     const split = ctx.state.split;
     const target = split.targets.find((target) => target.id === ctx.params.id);
     if (!target) throw new NotFountError("No payout with that address");
-    return ctx.render("admin/split/edit", { target });
+    return ctx.render("admin/split/target/edit", { target });
   }
 );
 splitAddressRouter.post<StateWithSplit>(
@@ -68,7 +68,7 @@ splitAddressRouter.get<StateWithSplit>(
     if (!target)
       throw new NotFountError(`No target ${ctx.params.id} on ${split.address}`);
 
-    await ctx.render("admin/split/remove", { target });
+    await ctx.render("admin/split/target/remove", { target });
   }
 );
 splitAddressRouter.post<StateWithSplit>(
