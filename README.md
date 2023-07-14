@@ -47,7 +47,7 @@ yarn start
 
 ## Running locally with a tunnelmole tunnel
 
-`node development.mjs` will start a local development server and use [tunnelmole](https://tunnelmole.com/) to get a public facing domain with https
+Start the tunnel using `yarn tunnel` then start the dev server using `yarn dev`
 
 ## Running with docker
 

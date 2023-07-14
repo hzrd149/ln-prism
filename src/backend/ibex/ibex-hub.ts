@@ -1,5 +1,4 @@
 import debug from "debug";
-import { createHash } from "node:crypto";
 import { LightningBackend } from "../type.js";
 import { msatsToSats } from "../../helpers/sats.js";
 import { db } from "../../db.js";
@@ -152,30 +151,20 @@ export class IBEXHubBackend implements LightningBackend {
   }
 
   async createInvoice(amount: number, description?: string, webhook?: string) {
-    const hash = createHash("sha256");
-    hash.update(description);
-
-    const encoder = new TextEncoder();
-    const view = encoder.encode(description);
-    const unhashedDescription = Buffer.from(view).toString("hex");
-    const descriptionHash = hash.digest("hex");
-
-    console.log(description, unhashedDescription, descriptionHash);
-
-    const result = await this.requestWithAuth("/v2/invoice/add", {
+    const result = await this.requestWithAuth("/invoice/add", {
       method: "POST",
       body: JSON.stringify({
-        amount,
+        amountMsat: amount,
         accountId: this.accountId,
-        memo: unhashedDescription,
+        descPrehash: description,
         webhookUrl: webhook,
-        expiration: 30,
+        expiration: 120,
       }),
     });
 
     return {
-      paymentRequest: result.invoice.bolt11 as string,
-      paymentHash: result.invoice.hash as string,
+      paymentRequest: result.bolt11 as string,
+      paymentHash: result.hash as string,
     };
   }
 

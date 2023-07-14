@@ -102,7 +102,7 @@ async function manualCheck() {
   for (const split of getSplits()) {
     await split.manualCheck();
   }
-  setTimeout(manualCheck, 1000 * 10);
+  setTimeout(manualCheck, 1000 * 30);
 }
 manualCheck();
 
