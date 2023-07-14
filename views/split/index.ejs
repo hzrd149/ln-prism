@@ -34,7 +34,7 @@
       <td><%- address %></td>
       <td><%- weight %></td>
       <td><%- ((weight/totalWeight)*100).toFixed(2) %>%</td>
-      <td><%- split.targetFees[id]/1000 %></td>
+      <td><%- split.targetFees[id].estimate/1000 %></td>
     </tr>
     <% }) %>
   </tbody>

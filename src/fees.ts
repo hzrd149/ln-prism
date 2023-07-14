@@ -3,6 +3,10 @@ import { db } from "./db.js";
 export function recordFee(address: string, fee: number) {
   db.data.addressFees[address] = db.data.addressFees[address] || [];
   db.data.addressFees[address].push(Math.max(fee, 0));
+
+  while (db.data.addressFees[address].length > 10) {
+    db.data.addressFees[address].shift();
+  }
 }
 
 export function averageFee(address: string): number | undefined {

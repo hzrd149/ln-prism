@@ -179,7 +179,7 @@ export class IBEXHubBackend implements LightningBackend {
 
     return {
       paymentHash: result.transaction.payment.hash as string,
-      fee: result.transaction.payment.feeMsat as number,
+      fee: result.transaction.networkFee as number,
     };
   }
 

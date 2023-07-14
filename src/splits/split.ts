@@ -260,12 +260,6 @@ export class Split {
     const estFee = estimatedFee(payout.address);
     const amount = roundToSats(payout.amount - estFee);
 
-    this.log(
-      `Paying ${payout.address} ${msatsToSats(
-        amount
-      )} sats ( estimated fee of ${estFee / 1000} sats )`
-    );
-
     try {
       const payRequest = await getInvoiceFromLNAddress(
         payout.address,
@@ -274,6 +268,12 @@ export class Split {
       );
 
       const { paymentHash, fee } = await lightning.payInvoice(payRequest);
+
+      this.log(
+        `Paid ${payout.address} ${msatsToSats(amount)} sats ( fee: ${
+          fee / 1000
+        }, est fee: ${estFee / 1000} )`
+      );
 
       recordFee(payout.address, fee);
 
