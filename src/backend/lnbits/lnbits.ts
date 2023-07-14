@@ -20,12 +20,12 @@ export default class LNBitsBackend implements LightningBackend {
         ...opts?.headers,
         "X-Api-Key": this.adminKey,
       },
-    }).then((res) => {
+    }).then(async (res) => {
       if (res.headers.get("content-type") === "application/json") {
-        const result = res.json() as Promise<T>;
+        const result: T = await res.json();
 
         //@ts-ignore
-        if (!res.ok && result.detail !== undefined) {
+        if (result.detail !== undefined) {
           //@ts-ignore
           throw new Error("LNBits:" + result.detail);
         }
@@ -56,6 +56,7 @@ export default class LNBitsBackend implements LightningBackend {
     const encoder = new TextEncoder();
     const view = encoder.encode(description);
     const unhashedDescription = Buffer.from(view).toString("hex");
+    const descriptionHash = hash.digest("hex");
 
     const result = await this.request("/api/v1/payments", {
       method: "POST",
@@ -64,7 +65,7 @@ export default class LNBitsBackend implements LightningBackend {
         amount: msatsToSats(amount), //convert amount to sats, since LNBits only takes sats
         memo: "invoice",
         internal: false,
-        description_hash: hash.digest("hex"),
+        description_hash: descriptionHash,
         unhashed_description: unhashedDescription,
         webhook,
       }),
@@ -104,11 +105,11 @@ export default class LNBitsBackend implements LightningBackend {
     } catch (e) {}
     return false;
   }
-  async checkPaymentComplete(hash: string) {
-    try {
-      const result = await this.request(`/api/v1/payments/${hash}`);
-      return result.paid as boolean;
-    } catch (e) {}
-    return false;
-  }
+  // async checkPaymentComplete(hash: string) {
+  //   try {
+  //     const result = await this.request(`/api/v1/payments/${hash}`);
+  //     return result.paid as boolean;
+  //   } catch (e) {}
+  //   return false;
+  // }
 }

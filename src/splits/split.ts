@@ -7,16 +7,15 @@ import {
 } from "nostr-tools";
 import { nanoid } from "nanoid";
 import debug, { Debugger } from "debug";
-import { satsToMsats, roundToSats, msatsToSats } from "./helpers/sats.js";
-import { getAddressMetadata } from "./helpers/lightning-address.js";
-import { nowUnix } from "./helpers/nostr.js";
-import { BadRequestError, ConflictError } from "./helpers/errors.js";
-import { averageFee, estimatedFee, recordFee } from "./fees.js";
-import { getInvoiceFromLNAddress } from "./helpers/lnurl.js";
-import { connect, relayPool } from "./relay-pool.js";
-import { NOSTR_RELAYS } from "./env.js";
-import { db } from "./db.js";
-import { lightning } from "./backend/index.js";
+import { satsToMsats, roundToSats, msatsToSats } from "../helpers/sats.js";
+import { getAddressMetadata } from "../helpers/lightning-address.js";
+import { nowUnix } from "../helpers/nostr.js";
+import { BadRequestError, ConflictError } from "../helpers/errors.js";
+import { averageFee, estimatedFee, recordFee } from "../fees.js";
+import { getInvoiceFromLNAddress } from "../helpers/lnurl.js";
+import { connect, relayPool } from "../relay-pool.js";
+import { NOSTR_RELAYS } from "../env.js";
+import { lightning } from "../backend/index.js";
 
 type SplitTarget = {
   id: string;
@@ -26,6 +25,7 @@ type SplitTarget = {
 type PendingInvoice = {
   id: string;
   paymentHash: string;
+  paymentRequest: string;
   amount: number;
   zapRequest?: string;
   lnurlComment?: string;
@@ -36,6 +36,16 @@ type PendingPayout = {
   weight: number;
   lnurlComment?: string;
   failed?: string;
+};
+
+export type SplitJson = {
+  privateKey: string;
+  id: string;
+  name: string;
+  domain: string;
+  targets: SplitTarget[];
+  invoices: PendingInvoice[];
+  payouts: PendingPayout[];
 };
 
 export class Split {
@@ -209,6 +219,7 @@ export class Split {
     this.invoices.push({
       id,
       amount,
+      paymentRequest: invoice.paymentRequest,
       paymentHash: invoice.paymentHash,
       lnurlComment,
     });
@@ -293,29 +304,4 @@ export class Split {
       }
     }
   }
-}
-
-export async function createSplit(
-  name: string,
-  domain: string,
-  privateKey?: string
-) {
-  const split = new Split(name, domain, privateKey);
-
-  if (getSplitByName(name, domain)) {
-    throw new Error("A split with that name already exists");
-  }
-
-  db.data.splits.push(split);
-  return split;
-}
-export async function removeSplit(id: string) {
-  db.data.splits = db.data.splits.filter((s) => s.id !== id);
-}
-
-export function getSplitById(splitId: string) {
-  return db.data.splits.find((s) => s.id === splitId);
-}
-export function getSplitByName(name: string, domain: string) {
-  return db.data.splits.find((s) => s.name === name && s.domain === domain);
 }

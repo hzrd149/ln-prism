@@ -1,6 +1,7 @@
 import debug from "debug";
 import { LightningBackend } from "../type.js";
 import { msatsToSats } from "../../helpers/sats.js";
+import { db } from "../../db.js";
 
 export type AuthData = {
   email?: string;
@@ -11,7 +12,7 @@ export type AuthData = {
   refreshTokenExpiresAt?: Date;
 };
 
-export class IBEXBackend implements LightningBackend {
+export class IBEXHubBackend implements LightningBackend {
   baseUrl: string = "https://ibexhub.ibexmercado.com";
   accountId: string;
 
@@ -24,6 +25,15 @@ export class IBEXBackend implements LightningBackend {
   }
 
   async setup() {
+    // attempt to load the refresh token from the db
+    if (db.data.refreshTokens[this.baseUrl]) {
+      this.auth.refreshToken = db.data.refreshTokens[this.baseUrl].token;
+      this.auth.refreshTokenExpiresAt = new Date(
+        db.data.refreshTokens[this.baseUrl].expire
+      );
+      this.log("Loaded refresh token from db");
+    }
+
     const result = await this.requestWithAuth(`/v2/account/${this.accountId}`);
 
     this.log(
@@ -70,8 +80,6 @@ export class IBEXBackend implements LightningBackend {
   ) {
     if (!this.accessToken) await this.refreshAccessToken();
 
-    console.log(this.auth);
-
     return this.request<T>(url, {
       ...init,
       headers: {
@@ -117,6 +125,13 @@ export class IBEXBackend implements LightningBackend {
       this.auth.refreshToken = refreshToken;
       this.auth.refreshTokenExpiresAt = new Date(refreshTokenExpiresAt * 1000);
 
+      // save refresh token to db
+      db.data.refreshTokens[this.baseUrl] = {
+        token: this.auth.refreshToken,
+        expire: this.auth.refreshTokenExpiresAt.toISOString(),
+      };
+      this.log("Saved refresh token to db");
+
       return this.accessToken;
     }
 
@@ -136,19 +151,20 @@ export class IBEXBackend implements LightningBackend {
   }
 
   async createInvoice(amount: number, description?: string, webhook?: string) {
-    const result = await this.requestWithAuth("/v2/invoice/add", {
+    const result = await this.requestWithAuth("/invoice/add", {
       method: "POST",
       body: JSON.stringify({
-        amount,
+        amountMsat: amount,
         accountId: this.accountId,
-        memo: description,
+        descPrehash: description,
         webhookUrl: webhook,
+        expiration: 120,
       }),
     });
 
     return {
-      paymentRequest: result.invoice.bolt11 as string,
-      paymentHash: result.invoice.hash as string,
+      paymentRequest: result.bolt11 as string,
+      paymentHash: result.hash as string,
     };
   }
 
@@ -168,9 +184,10 @@ export class IBEXBackend implements LightningBackend {
   }
 
   async checkInvoiceComplete(hash: string): Promise<boolean> {
-    return false;
+    const result = await this.requestWithAuth(`/invoice/from-hash/${hash}`);
+    return result.state.name === "SETTLED";
   }
-  async checkPaymentComplete(hash: string): Promise<boolean> {
-    return false;
-  }
+  // async checkPaymentComplete(hash: string): Promise<boolean> {
+  //   return false;
+  // }
 }

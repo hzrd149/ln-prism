@@ -1,10 +1,8 @@
 import Router from "@koa/router";
-import { db } from "../../db.js";
-import { getAddressMetadata } from "../../helpers/lightning-address.js";
-import { Split, createSplit, removeSplit } from "../../splits.js";
 import { LOGIN_PASSWORD, LOGIN_USER } from "../../env.js";
-import { BadRequestError, ConflictError } from "../../helpers/errors.js";
 import { StateWithSplit } from "../params.js";
+import { Split } from "../../splits/split.js";
+import { createSplit, removeSplit } from "../../splits/splits.js";
 
 const { default: auth } = await import("koa-basic-auth");
 
@@ -29,11 +27,6 @@ function formatSplit(split: Split) {
 
 // create
 apiRouter.post("/api/split", async (ctx) => {
-  const name = ctx.request.body.name;
-  if (db.data.splits[name]) {
-    throw new ConflictError("A split with that name already exists");
-  }
-
   const split = await createSplit(
     ctx.request.body.name,
     ctx.request.body.domain || ctx.hostname,

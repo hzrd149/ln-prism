@@ -20,9 +20,12 @@ import { webhookRouter } from "./routes/webhooks.js";
 
 import { PORT } from "./env.js";
 import { db } from "./db.js";
+import { getSplits, loadSplits, saveSplits } from "./splits/splits.js";
 
 const require = createRequire(import.meta.url);
 const __dirname = dirname(fileURLToPath(import.meta.url));
+
+await loadSplits();
 
 const app = new Koa();
 
@@ -89,22 +92,23 @@ app.listen(PORT || 3000);
 
 // payout splits ever 2 seconds
 setInterval(async () => {
-  for (const split of db.data.splits) {
+  for (const split of getSplits()) {
     await split.payNext();
   }
 }, 1000 * 2);
 
 // manually check invoices ever 5 seconds
 async function manualCheck() {
-  for (const split of db.data.splits) {
+  for (const split of getSplits()) {
     await split.manualCheck();
   }
-  setTimeout(manualCheck, 1000 * 10);
+  setTimeout(manualCheck, 1000 * 30);
 }
 manualCheck();
 
 // save database every 10 seconds
 setInterval(() => {
+  saveSplits();
   db.write();
 }, 1000 * 10);
 

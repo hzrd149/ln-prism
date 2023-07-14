@@ -1,8 +1,8 @@
 import Router from "@koa/router";
-import { db } from "../../db.js";
 import { LOGIN_PASSWORD, LOGIN_USER } from "../../env.js";
 import { adminSplitRouter } from "./split/index.js";
 import { createSplitRouter } from "./create.js";
+import { getSplits } from "../../splits/splits.js";
 
 const { default: auth } = await import("koa-basic-auth");
 
@@ -13,7 +13,7 @@ if (LOGIN_USER && LOGIN_PASSWORD) {
 }
 
 adminRouter.get("/admin", async (ctx) => {
-  const splits = Array.from(Object.values(db.data.splits));
+  const splits = getSplits();
   await ctx.render("admin/index", { splits });
 });
 

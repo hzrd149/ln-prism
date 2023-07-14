@@ -7,7 +7,7 @@ import {
   LNBITS_ADMIN_KEY,
   LNBITS_URL,
 } from "../env.js";
-import { IBEXBackend } from "./ibex/ibex.js";
+import { IBEXHubBackend } from "./ibex/ibex-hub.js";
 import LNBitsBackend from "./lnbits/lnbits.js";
 import { LightningBackend } from "./type.js";
 
@@ -17,17 +17,9 @@ function createBackend() {
   }
 
   if (IBEX_EMAIL && IBEX_PASSWORD && IBEX_ACCOUNT_ID) {
-    const ibex = new IBEXBackend(IBEX_ACCOUNT_ID, {
+    const ibex = new IBEXHubBackend(IBEX_ACCOUNT_ID, {
       email: IBEX_EMAIL,
       password: IBEX_PASSWORD,
-    });
-    if (IBEX_URL) ibex.baseUrl = IBEX_URL;
-
-    return ibex;
-  }
-  if (IBEX_DEVELOPER_TOKEN && IBEX_ACCOUNT_ID) {
-    const ibex = new IBEXBackend(IBEX_ACCOUNT_ID, {
-      refreshToken: IBEX_DEVELOPER_TOKEN,
     });
     if (IBEX_URL) ibex.baseUrl = IBEX_URL;
 

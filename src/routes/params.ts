@@ -1,6 +1,7 @@
 import Router from "@koa/router";
 import { NotFountError } from "../helpers/errors.js";
-import { Split, getSplitById, getSplitByName } from "../splits.js";
+import { Split } from "../splits/split.js";
+import { getSplitById, getSplitByName } from "../splits/splits.js";
 
 export type CustomState = {
   ogTitle: string;
