@@ -1,4 +1,4 @@
-import { Split } from "../splits.js";
+import { Split } from "../splits/split.js";
 import Router from "@koa/router";
 import { roundToSats } from "../helpers/sats.js";
 import { LNURLPayMetadata, LNURLpayRequest } from "../types.js";

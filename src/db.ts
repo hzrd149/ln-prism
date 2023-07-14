@@ -1,10 +1,9 @@
 import { resolve, isAbsolute } from "node:path";
-
+import debug from "debug";
 import { Low } from "lowdb";
 import { JSONFile } from "lowdb/node";
 import { DB_PATH } from "./env.js";
-import { Split } from "./splits.js";
-import debug from "debug";
+import type { SplitJson } from "./splits/split.js";
 
 const log = debug("prism:db");
 const file = isAbsolute(DB_PATH) ? DB_PATH : resolve(process.cwd(), DB_PATH);
@@ -12,8 +11,9 @@ const file = isAbsolute(DB_PATH) ? DB_PATH : resolve(process.cwd(), DB_PATH);
 log(`Using ${file}`);
 
 type Schema = {
-  splits: Split[];
+  splits: SplitJson[];
   addressFees: Record<string, number[]>;
+  refreshTokens: Record<string, { token: string; expire: string }>;
 };
 
 // Configure lowdb to write data to JSON file
@@ -21,6 +21,7 @@ const adapter = new JSONFile<Schema>(file);
 const defaultData: Schema = {
   splits: [],
   addressFees: {},
+  refreshTokens: {},
 };
 const db = new Low(adapter, defaultData);
 
@@ -29,17 +30,6 @@ await db.read();
 // ensure all fields are present
 db.data.splits = db.data.splits || [];
 db.data.addressFees = db.data.addressFees || {};
-
-// load
-db.data.splits = db.data.splits.map(
-  ({ id, name, domain, targets, privateKey, invoices }) => {
-    const split = new Split(name, domain);
-    split.id = id;
-    split.targets = targets;
-    split.privateKey = privateKey;
-    split.invoices = invoices;
-    return split;
-  }
-);
+db.data.refreshTokens = db.data.refreshTokens || {};
 
 export { db };

@@ -1,6 +1,6 @@
 import Router from "@koa/router";
-import { Split, removeSplit } from "../../../splits.js";
 import { StateWithSplit } from "../../params.js";
+import { removeSplit } from "../../../splits/splits.js";
 
 export const deleteSplitRouter = new Router();
 

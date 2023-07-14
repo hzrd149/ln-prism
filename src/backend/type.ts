@@ -16,5 +16,5 @@ export interface LightningBackend {
   ): Promise<InvoiceDetails>;
   payInvoice(invoice: string): Promise<PaymentDetails>;
   checkInvoiceComplete(hash: string): Promise<boolean>;
-  checkPaymentComplete(hash: string): Promise<boolean>;
+  // checkPaymentComplete(hash: string): Promise<boolean>;
 }

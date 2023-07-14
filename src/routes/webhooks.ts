@@ -1,5 +1,5 @@
 import Router from "@koa/router";
-import { Split } from "../splits.js";
+import { Split } from "../splits/split.js";
 import { StateWithSplit } from "./params.js";
 
 export const webhookRouter = new Router();

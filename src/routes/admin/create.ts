@@ -1,7 +1,5 @@
 import Router from "@koa/router";
-import { createSplit } from "../../splits.js";
-import { ConflictError } from "../../helpers/errors.js";
-import { db } from "../../db.js";
+import { createSplit } from "../../splits/splits.js";
 
 export const createSplitRouter = new Router();
 
