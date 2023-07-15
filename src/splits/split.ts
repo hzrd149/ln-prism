@@ -1,19 +1,22 @@
 import {
+  Event,
   Kind,
   finishEvent,
   generatePrivateKey,
   getPublicKey,
   nip19,
+  nip57,
 } from "nostr-tools";
 import { nanoid } from "nanoid";
 import debug, { Debugger } from "debug";
+import dayjs from "dayjs";
+
 import { satsToMsats, roundToSats, msatsToSats } from "../helpers/sats.js";
 import { getAddressMetadata } from "../helpers/lightning-address.js";
-import { nowUnix } from "../helpers/nostr.js";
 import { BadRequestError, ConflictError } from "../helpers/errors.js";
 import { averageFee, estimatedFee, recordFee } from "../fees.js";
 import { getInvoiceFromLNAddress } from "../helpers/lnurl.js";
-import { connect, relayPool } from "../relay-pool.js";
+import { connect, publish } from "../relays.js";
 import { NOSTR_RELAYS } from "../env.js";
 import { lightning } from "../backend/index.js";
 
@@ -36,6 +39,7 @@ type PendingPayout = {
   weight: number;
   lnurlComment?: string;
   failed?: string;
+  zapRequest?: string;
 };
 
 export type SplitJson = {
@@ -82,8 +86,14 @@ export class Split {
       relays: [NOSTR_RELAYS[0]],
     });
   }
+  get pubkey() {
+    return getPublicKey(this.privateKey);
+  }
   get npub() {
     return nip19.npubEncode(getPublicKey(this.privateKey));
+  }
+  get nsec() {
+    return nip19.nsecEncode(this.privateKey);
   }
   get lnurlp() {
     return `lnurlp://${this.domain}/lnurlp/${this.name}`;
@@ -118,16 +128,28 @@ export class Split {
       {
         kind: Kind.Metadata,
         content: JSON.stringify(metadata),
-        created_at: nowUnix(),
+        created_at: dayjs().unix(),
         tags: [],
       },
       this.privateKey
     );
 
-    await connect(NOSTR_RELAYS);
-    const pub = relayPool.publish(NOSTR_RELAYS, kind0);
+    const relays = finishEvent(
+      {
+        kind: Kind.RelayList,
+        content: "",
+        tags: NOSTR_RELAYS.map((url) => ["r", url]),
+        created_at: dayjs().unix(),
+      },
+      this.privateKey
+    );
 
-    this.log(`Updated nostr profile`);
+    await connect(NOSTR_RELAYS);
+
+    await publish(NOSTR_RELAYS, kind0);
+    await publish(NOSTR_RELAYS, relays);
+
+    this.log(`Updated nostr profile ${this.npub}`);
   }
 
   async getMinSendable() {
@@ -208,7 +230,8 @@ export class Split {
   async createInvoice(
     amount: number,
     description?: string,
-    lnurlComment?: string
+    lnurlComment?: string,
+    zapRequest?: string
   ) {
     const id = nanoid();
     const invoice = await lightning.createInvoice(
@@ -225,6 +248,7 @@ export class Split {
       paymentRequest: invoice.paymentRequest,
       paymentHash: invoice.paymentHash,
       lnurlComment,
+      zapRequest,
     });
 
     return invoice;
@@ -245,9 +269,28 @@ export class Split {
         weight,
         amount: payoutAmount,
         lnurlComment: invoice.lnurlComment,
+        zapRequest: invoice.zapRequest,
       };
 
       this.payouts.push(payout);
+    }
+
+    // publish zap receipt
+    if (invoice.zapRequest && this.privateKey) {
+      const parsed = JSON.parse(invoice.zapRequest) as Event;
+      const [_, ...relays] = parsed.tags.find((t) => t[0] === "relays") ?? [];
+
+      const zap = nip57.makeZapReceipt({
+        zapRequest: invoice.zapRequest,
+        bolt11: invoice.paymentRequest,
+        paidAt: new Date(),
+      });
+
+      const signed = finishEvent(zap, this.privateKey);
+
+      await connect(relays);
+      await publish(relays, signed);
+      this.log("Published zap receipt");
     }
   }
 
@@ -264,18 +307,46 @@ export class Split {
     const amount = roundToSats(payout.amount - estFee);
 
     try {
+      let zapRequest: Event;
+
+      // create zap requests for each payout pubkey
+      // TODO: find the payouts pubkey
+      // if (payout.zapRequest) {
+      //   const parsed = JSON.parse(payout.zapRequest) as Event;
+
+      //   const tags = parsed.tags.map((tag) => {
+      //     if (tag[0] === "amount") {
+      //       return ["amount", String(amount)];
+      //     }
+      //     return tag;
+      //   });
+
+      //   zapRequest = finishEvent(
+      //     {
+      //       kind: Kind.ZapRequest,
+      //       content: `Zap from nostr:${nip19.npubEncode(parsed.pubkey)} ${
+      //         parsed.content
+      //       }`.trim(),
+      //       tags,
+      //       created_at: dayjs().unix(),
+      //     },
+      //     this.privateKey
+      //   );
+      // }
+
       const payRequest = await getInvoiceFromLNAddress(
         payout.address,
         amount,
-        payout.lnurlComment
+        payout.lnurlComment,
+        zapRequest && JSON.stringify(zapRequest)
       );
 
       const { paymentHash, fee } = await lightning.payInvoice(payRequest);
 
       this.log(
-        `Paid ${payout.address} ${msatsToSats(amount)} sats ( fee: ${
-          fee / 1000
-        }, est fee: ${estFee / 1000} )`
+        `${zapRequest ? "Zapped" : "Paid"} ${payout.address} ${msatsToSats(
+          amount
+        )} sats ( fee: ${fee / 1000}, est fee: ${estFee / 1000} )`
       );
 
       recordFee(payout.address, fee);

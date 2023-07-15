@@ -4,6 +4,7 @@ import { roundToSats } from "../helpers/sats.js";
 import { LNURLPayMetadata, LNURLpayRequest } from "../types.js";
 import { BadRequestError } from "../helpers/errors.js";
 import { StateWithSplit } from "./params.js";
+import { nip57 } from "nostr-tools";
 
 export const lnurlRouter = new Router();
 
@@ -34,6 +35,8 @@ lnurlRouter.get<StateWithSplit>(
       metadata: JSON.stringify(metadata),
       commentAllowed: 256,
       tag: "payRequest",
+      nostrPubkey: split.pubkey,
+      allowsNostr: true,
     } as LNURLpayRequest;
   }
 );
@@ -44,6 +47,12 @@ lnurlRouter.get<StateWithSplit>("/lnurlp-callback/:splitName", async (ctx) => {
     const amount = parseInt(ctx.query.amount as string);
     const metadata = buildLNURLpMetadata(split);
     const comment = ctx.query.comment as string | undefined;
+    const nostr = ctx.query.nostr as string | undefined;
+
+    if (nostr) {
+      const errorMessage = nip57.validateZapRequest(nostr);
+      if (errorMessage) throw new BadRequestError(errorMessage);
+    }
 
     const minSendable = roundToSats(await split.getMinSendable());
     const maxSendable = roundToSats(await split.getMaxSendable());
@@ -56,7 +65,8 @@ lnurlRouter.get<StateWithSplit>("/lnurlp-callback/:splitName", async (ctx) => {
     const { paymentRequest } = await split.createInvoice(
       amount,
       JSON.stringify(metadata),
-      comment
+      comment,
+      nostr
     );
 
     ctx.body = {
@@ -65,6 +75,7 @@ lnurlRouter.get<StateWithSplit>("/lnurlp-callback/:splitName", async (ctx) => {
     };
     ctx.status = 200;
   } catch (e) {
+    console.log(e);
     ctx.body = {
       status: "ERROR",
       reason: e.message,

@@ -5,12 +5,14 @@ export type LNURLpayRequest = {
   metadata: string;
   tag: "payRequest";
   commentAllowed?: number;
+  allowsNostr?: boolean;
 };
 
 export async function getInvoiceFromLNURL(
   lnurl: string,
   amount: number,
-  comment?: string
+  comment?: string,
+  zapRequest?: string
 ) {
   const metadata = (await fetch(lnurl).then((res) =>
     res.json()
@@ -31,11 +33,15 @@ export async function getInvoiceFromLNURL(
     callbackUrl.searchParams.append("comment", comment);
   }
 
+  if (metadata.allowsNostr && zapRequest) {
+    callbackUrl.searchParams.append("nostr", zapRequest);
+  }
+
   const {
     pr: payRequest,
     status,
     reason,
-  } = await fetch(callbackUrl).then((res) => res.json());
+  } = await fetch(callbackUrl.toString()).then((res) => res.json());
 
   if (status === "ERROR") throw new Error(reason);
 
@@ -45,10 +51,11 @@ export async function getInvoiceFromLNURL(
 export async function getInvoiceFromLNAddress(
   address: string,
   amount: number,
-  comment?: string
+  comment?: string,
+  zapRequest?: string
 ) {
   let [name, domain] = address.split("@");
   const lnurl = `https://${domain}/.well-known/lnurlp/${name}`;
 
-  return getInvoiceFromLNURL(lnurl, amount, comment);
+  return getInvoiceFromLNURL(lnurl, amount, comment, zapRequest);
 }
