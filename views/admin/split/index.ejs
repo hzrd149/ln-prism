@@ -49,7 +49,7 @@
 </table>
 
 <a href="/admin/split/<%- split.id %>/add" class="button button-outline"
-  >Add address</a
+  >Add payout</a
 >
 
 <div class="h-stack flex-wrap">
@@ -121,16 +121,20 @@
       <td><code><%- split.address %></code></td>
     </tr>
     <tr>
-      <td>Nostr</td>
-      <td><code><%- split.nprofile %></code></td>
-    </tr>
-    <tr>
       <td>LNURL</td>
       <td><code><%- split.lnurlp %></code></td>
     </tr>
     <tr>
       <td>API Key</td>
       <td><code><%- split.apiKey %></code></td>
+    </tr>
+    <tr>
+      <td>Nostr npub</td>
+      <td><code><%- split.npub %></code></td>
+    </tr>
+    <tr>
+      <td>Nostr nsec</td>
+      <td><code><%- split.nsec %></code></td>
     </tr>
   </tbody>
 </table>

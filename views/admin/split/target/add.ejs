@@ -1,26 +1,31 @@
 <h1><%- split.address %></h1>
 
 <form action="/admin/split/<%- split.id %>/add" method="post">
-  <label for="address">Add Address</label>
-  <div class="h-stack flex-wrap">
-    <input
-      type="email"
-      placeholder="user@domain.com"
-      id="address"
-      name="address"
-      style="flex: 2; min-width: 2in"
-      required
-    />
-    <input
-      type="number"
-      name="weight"
-      min="1"
-      size="3"
-      step="1"
-      placeholder="weight"
-      style="flex: 1; min-width: 1in"
-      required
-    />
-    <button class="button button-outline">Add</button>
-  </div>
+  <label for="type">type</label>
+  <select name="type" id="type" disabled>
+    <option value="address">LN Address</option>
+    <option value="npub">Nostr npub</option>
+    <option value="lnurl">LNURL Pay</option>
+  </select>
+  <label for="payout">Payout</label>
+  <input
+    type="email"
+    placeholder="user@domain.com, npub1..., LNURL..."
+    id="payout"
+    name="payout"
+    style="flex: 2; min-width: 2in"
+    required
+  />
+  <label for="weight">Weight</label>
+  <input
+    type="number"
+    name="weight"
+    min="1"
+    size="3"
+    step="1"
+    placeholder="weight"
+    style="flex: 1; min-width: 1in"
+    required
+  />
+  <button class="button button-outline">Add</button>
 </form>

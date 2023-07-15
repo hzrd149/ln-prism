@@ -50,7 +50,7 @@ app.use(mount("/css/font", staticFolder(font)));
 const router = new Router();
 setupParams(router);
 router.use("/webhook", webhookRouter.routes(), webhookRouter.allowedMethods());
-router.use("/lnurl", lnurlRouter.routes(), lnurlRouter.allowedMethods());
+router.use(lnurlRouter.routes(), lnurlRouter.allowedMethods());
 router.use("/api", apiRouter.routes(), apiRouter.allowedMethods());
 router.use("/admin", adminRouter.routes(), adminRouter.allowedMethods());
 router.use(publicRouter.routes(), publicRouter.allowedMethods());

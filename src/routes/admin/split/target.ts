@@ -13,7 +13,7 @@ export const splitAddressRouter = new Router();
 splitAddressRouter.get("/add", (ctx) => ctx.render("admin/split/target/add"));
 splitAddressRouter.post<StateWithSplit>("/add", async (ctx) => {
   const split = ctx.state.split;
-  const address = ctx.request.body.address;
+  const address = ctx.request.body.payout;
   const weight = parseInt(ctx.request.body.weight);
 
   if (split.targets.find((p) => p.address === address))
@@ -59,7 +59,7 @@ splitAddressRouter.get<StateWithSplit>("/remove/:id", async (ctx) => {
 });
 splitAddressRouter.post<StateWithSplit>("/remove/:id", async (ctx) => {
   const split = ctx.state.split;
-  split.targets = split.targets.filter((target) => target.id !== ctx.params.id);
+  split.removeTarget(ctx.params.id);
 
   await ctx.redirect(`/admin/split/${split.id}`);
 });
