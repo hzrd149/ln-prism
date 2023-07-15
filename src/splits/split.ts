@@ -43,6 +43,7 @@ export type SplitJson = {
   id: string;
   name: string;
   domain: string;
+  apiKey: string;
   targets: SplitTarget[];
   invoices: PendingInvoice[];
   payouts: PendingPayout[];
@@ -57,6 +58,8 @@ export class Split {
   invoices: PendingInvoice[] = [];
   payouts: PendingPayout[] = [];
   log: Debugger;
+
+  apiKey = nanoid();
 
   constructor(name: string, domain: string, privateKey?: string) {
     this.id = nanoid();

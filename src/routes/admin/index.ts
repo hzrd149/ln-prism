@@ -3,6 +3,7 @@ import { LOGIN_PASSWORD, LOGIN_USER } from "../../env.js";
 import { adminSplitRouter } from "./split/index.js";
 import { createSplitRouter } from "./create.js";
 import { getSplits } from "../../splits/splits.js";
+import { db } from "../../db.js";
 
 const { default: auth } = await import("koa-basic-auth");
 
@@ -12,10 +13,29 @@ if (LOGIN_USER && LOGIN_PASSWORD) {
   adminRouter.use(auth({ name: LOGIN_USER, pass: LOGIN_PASSWORD }));
 }
 
-adminRouter.get("/admin", async (ctx) => {
+adminRouter.use(async (ctx, next) => {
+  try {
+    await next();
+  } catch (err) {
+    if (!err.status) {
+      console.log(err);
+    } else if (err.status === 401) {
+      ctx.set("WWW-Authenticate", "Basic");
+    }
+
+    ctx.status = err.statusCode || err.status || 500;
+    ctx.render("error", { error: err });
+  }
+});
+
+adminRouter.get("/", async (ctx) => {
   const splits = getSplits();
-  await ctx.render("admin/index", { splits });
+  await ctx.render("admin/index", { splits, rootApiKey: db.data.rootApiKey });
 });
 
 adminRouter.use(createSplitRouter.routes(), createSplitRouter.allowedMethods());
-adminRouter.use(adminSplitRouter.routes(), adminSplitRouter.allowedMethods());
+adminRouter.use(
+  "/split/:splitId",
+  adminSplitRouter.routes(),
+  adminSplitRouter.allowedMethods()
+);

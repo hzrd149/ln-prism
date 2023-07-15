@@ -40,6 +40,7 @@ export function loadSplits() {
     split.targets = json.targets;
     split.privateKey = json.privateKey;
     split.invoices = json.invoices;
+    split.apiKey = json.apiKey;
     splits.add(split);
     return split;
   }
@@ -54,5 +55,6 @@ export function saveSplits() {
     payouts: split.payouts,
     invoices: split.invoices,
     privateKey: split.privateKey,
+    apiKey: split.apiKey,
   }));
 }
