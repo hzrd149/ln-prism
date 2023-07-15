@@ -6,7 +6,7 @@ import { editSplitRouter } from "./edit.js";
 
 export const adminSplitRouter = new Router();
 
-adminSplitRouter.get<StateWithSplit>("/admin/split/:splitId", (ctx) => {
+adminSplitRouter.get<StateWithSplit>("/", (ctx) => {
   const split = ctx.state.split;
 
   ctx.state.ogTitle = split.address;
@@ -18,14 +18,16 @@ adminSplitRouter.get<StateWithSplit>("/admin/split/:splitId", (ctx) => {
 });
 
 adminSplitRouter.use(
+  "/delete",
   deleteSplitRouter.routes(),
   deleteSplitRouter.allowedMethods()
 );
 adminSplitRouter.use(
-  splitAddressRouter.routes(),
-  splitAddressRouter.allowedMethods()
-);
-adminSplitRouter.use(
+  "/edit",
   editSplitRouter.routes(),
   editSplitRouter.allowedMethods()
+);
+adminSplitRouter.use(
+  splitAddressRouter.routes(),
+  splitAddressRouter.allowedMethods()
 );

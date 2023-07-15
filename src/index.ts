@@ -46,45 +46,14 @@ app.use(mount("/css/milligram", staticFolder(miligram)));
 const font = dirname(require.resolve("@fontsource/roboto"));
 app.use(mount("/css/font", staticFolder(font)));
 
-app.use(async (ctx, next) => {
-  try {
-    await next();
-  } catch (err) {
-    if (401 == err.status) {
-      ctx.status = 401;
-      ctx.set("WWW-Authenticate", "Basic");
-
-      if (ctx.accepts(["html", "json"]) == "html") {
-        ctx.body = "cant haz that";
-      } else {
-        ctx.body = {
-          success: false,
-          status: err.status,
-          message: "cant haz that",
-        };
-      }
-    } else {
-      if (Object.getPrototypeOf(err) === Error) {
-        console.log(err);
-      }
-      ctx.status = err.statusCode || err.status || 500;
-
-      if (ctx.accepts(["html", "json"]) == "html")
-        return ctx.render("error", { error: err });
-      else
-        ctx.body = { success: false, status: err.status, message: err.message };
-    }
-  }
-});
-
 // router
 const router = new Router();
 setupParams(router);
+router.use("/webhook", webhookRouter.routes(), webhookRouter.allowedMethods());
+router.use("/lnurl", lnurlRouter.routes(), lnurlRouter.allowedMethods());
+router.use("/api", apiRouter.routes(), apiRouter.allowedMethods());
+router.use("/admin", adminRouter.routes(), adminRouter.allowedMethods());
 router.use(publicRouter.routes(), publicRouter.allowedMethods());
-router.use(webhookRouter.routes(), webhookRouter.allowedMethods());
-router.use(lnurlRouter.routes(), lnurlRouter.allowedMethods());
-router.use(adminRouter.routes(), adminRouter.allowedMethods());
-router.use(apiRouter.routes(), apiRouter.allowedMethods());
 
 app.use(router.routes()).use(router.allowedMethods());
 

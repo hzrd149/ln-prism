@@ -4,13 +4,10 @@ import { removeSplit } from "../../../splits/splits.js";
 
 export const deleteSplitRouter = new Router();
 
-deleteSplitRouter.get<StateWithSplit>("/admin/split/:splitId/delete", (ctx) =>
+deleteSplitRouter.get<StateWithSplit>("/", (ctx) =>
   ctx.render("admin/split/delete")
 );
-deleteSplitRouter.post<StateWithSplit>(
-  "/admin/split/:splitId/delete",
-  async (ctx) => {
-    await removeSplit(ctx.state.split.id);
-    await ctx.redirect("/admin");
-  }
-);
+deleteSplitRouter.post<StateWithSplit>("/", async (ctx) => {
+  await removeSplit(ctx.state.split.id);
+  await ctx.redirect("/admin");
+});
