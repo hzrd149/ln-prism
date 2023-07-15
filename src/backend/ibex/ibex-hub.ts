@@ -74,6 +74,7 @@ export class IBEXHubBackend implements LightningBackend {
       } else throw new Error("Expected JSON");
     });
   }
+
   private async requestWithAuth<T extends Object = any>(
     url: string,
     init?: RequestInit
