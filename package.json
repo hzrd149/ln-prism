@@ -19,7 +19,8 @@
     "tunnel": "tmole 3000",
     "format": "prettier -w . --ignore-path .gitignore",
     "prerelease": "tsc",
-    "release": "changeset publish"
+    "release": "changeset publish",
+    "support": "npx @getalby/pkgzap-cli"
   },
   "dependencies": {
     "@fontsource/roboto": "^5.0.1",
@@ -56,5 +57,9 @@
     "shelljs": "^0.8.5",
     "tunnelmole": "^2.1.10",
     "typescript": "^5.0.4"
+  },
+  "funding": {
+    "type": "lightning",
+    "url": "lightning:hzrd149@getalby.com"
   }
 }
