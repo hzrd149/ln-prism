@@ -1,7 +1,10 @@
+import debug from "debug";
 import { Event, Filter, Relay, relayInit } from "nostr-tools";
 import WebSocket from "ws";
 // @ts-ignore
 global.WebSocket = WebSocket;
+
+const log = debug("prism:relays");
 
 const relayCache = new Map<string, Relay>();
 function getRelays(urls: string[]) {
@@ -24,7 +27,11 @@ export async function connect(urls: string[]) {
 
   for (const relay of relays) {
     if (relay.status !== WebSocket.OPEN) {
-      await relay.connect();
+      try {
+        await relay.connect();
+      } catch (e) {
+        log(`Failed to connect to ${relay.url}`);
+      }
     }
   }
 }
@@ -36,7 +43,7 @@ export async function publish(urls: string[], event: Event) {
     const pub = await relay.publish(event);
 
     pub.on("failed", (message) => {
-      console.log(`Failed to publish (${relay.url}): ${message}`);
+      log(`Failed to publish (${relay.url}): ${message}`);
     });
   }
 }

@@ -305,6 +305,7 @@ export class Split {
     const totalWeight = this.totalWeight;
     this.log(`Received ${msatsToSats(invoice.amount)} sats`);
 
+    const newPayouts: PendingPayout[] = [];
     for (const { address, weight, pubkey } of this.targets) {
       const payoutAmount = Math.round((weight / totalWeight) * invoice.amount);
 
@@ -317,6 +318,11 @@ export class Split {
         pubkey,
       };
 
+      newPayouts.push(payout);
+    }
+
+    // add payouts to list after all have been created
+    for (const payout of newPayouts) {
       this.payouts.push(payout);
     }
 
@@ -333,9 +339,13 @@ export class Split {
 
       const signed = finishEvent(zap, this.privateKey);
 
-      await connect(relays);
-      await publish(relays, signed);
-      this.log("Published zap receipt");
+      try {
+        await connect(relays);
+        await publish(relays, signed);
+        this.log("Published zap receipt");
+      } catch (e) {
+        this.log("Failed to publish zap receipt");
+      }
     }
   }
 
@@ -408,11 +418,16 @@ export class Split {
   // manually check if pending invoices are complete
   async manualCheck() {
     for (const { paymentHash, id } of this.invoices) {
-      this.log(`Checking ${paymentHash}`);
-      const complete = await lightning.checkInvoiceComplete(paymentHash);
+      try {
+        this.log(`Checking ${paymentHash}`);
+        const complete = await lightning.checkInvoiceComplete(paymentHash);
 
-      if (complete) {
-        await this.handleInvoicePaid(id);
+        if (complete) {
+          await this.handleInvoicePaid(id);
+        }
+      } catch (e) {
+        this.log(`Failed to check invoice ${id}`);
+        this.log(e);
       }
     }
   }
