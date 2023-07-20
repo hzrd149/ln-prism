@@ -61,6 +61,7 @@
       />
     </a>
   </div>
+  <% if (split.enableNostr) { %>
   <div style="flex: 1 0">
     <h3>Nostr</h3>
     <a href="https://nostrapp.link/?#<%- split.nprofile %>" target="_blank">
@@ -71,6 +72,7 @@
       />
     </a>
   </div>
+  <% } %>
 </div>
 
 <table style="white-space: nowrap">
@@ -86,12 +88,14 @@
       <td><code><%- split.address %></code></td>
     </tr>
     <tr>
-      <td>Nostr</td>
-      <td><code><%- split.nprofile %></code></td>
-    </tr>
-    <tr>
       <td>LNURL</td>
       <td><code><%- split.lnurlp %></code></td>
     </tr>
+    <% if (split.enableNostr) { %>
+    <tr>
+      <td>Nostr</td>
+      <td><code><%- split.nprofile %></code></td>
+    </tr>
+    <% } %>
   </tbody>
 </table>

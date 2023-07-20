@@ -5,6 +5,8 @@ export type LNURLpayRequest = {
   metadata: string;
   tag: "payRequest";
   commentAllowed?: number;
+  nostrPubkey?: string;
+  allowsNostr?: true;
 };
 
 type MetadataType =

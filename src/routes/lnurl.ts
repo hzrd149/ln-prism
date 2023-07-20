@@ -28,16 +28,21 @@ lnurlRouter.get<StateWithSplit>(
     const split = ctx.state.split;
     const metadata = buildLNURLpMetadata(split);
 
-    ctx.body = {
+    const body = {
       callback: `https://${split.domain}/lnurlp-callback/${split.name}`,
       minSendable: roundToSats(await split.getMinSendable()),
       maxSendable: roundToSats(await split.getMaxSendable()),
       metadata: JSON.stringify(metadata),
       commentAllowed: 256,
       tag: "payRequest",
-      nostrPubkey: split.pubkey,
-      allowsNostr: true,
     } as LNURLpayRequest;
+
+    if (split.enableNostr) {
+      body.nostrPubkey = split.pubkey;
+      body.allowsNostr = true;
+    }
+
+    ctx.body = body;
   }
 );
 

@@ -10,5 +10,7 @@ createSplitRouter.post("/create", async (ctx) => {
 
   const split = await createSplit(name, domain);
 
+  split.enableNostr = !!ctx.request.body.enableNostr;
+
   return ctx.redirect(`/admin/split/${split.id}`);
 });

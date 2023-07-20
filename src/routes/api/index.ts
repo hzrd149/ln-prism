@@ -30,7 +30,7 @@ function formatSplit(split: Split) {
     lnurl: split.lnurlp,
     npub: split.npub,
     nprofile: split.nprofile,
-    targets: split.targets,
+    targets: split.targets.map((t) => t.toJSON()),
   };
 }
 
@@ -78,7 +78,7 @@ apiRouter.patch<StateWithSplit>("/split/:splitId", async (ctx) => {
 
   if (ctx.request.body.targets) {
     const targets = ctx.request.body.targets as {
-      address: string;
+      input: string;
       weight: number;
     }[];
 

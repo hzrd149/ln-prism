@@ -1,16 +1,15 @@
 <h1><%- split.address %></h1>
 
 <form action="/admin/split/<%- split.id %>/edit/<%- target.id %>" method="post">
-  <label for="address">Target Address</label>
+  <label for="input">Target Address or npub</label>
   <div class="h-stack flex-wrap">
     <input
       class="mb-0"
-      type="email"
-      id="address"
-      name="address"
+      id="input"
+      name="input"
       style="flex: 2; min-width: 2in"
-      readonly
-      value="<%- target.address %>"
+      placeholder="user@domain.com, npub1..."
+      value="<%- target.npub || target.address %>"
     />
     <input
       class="mb-0"

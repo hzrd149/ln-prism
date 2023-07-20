@@ -1,4 +1,4 @@
-import { Event, Relay, relayInit } from "nostr-tools";
+import { Event, Filter, Relay, relayInit } from "nostr-tools";
 import WebSocket from "ws";
 // @ts-ignore
 global.WebSocket = WebSocket;
@@ -39,4 +39,15 @@ export async function publish(urls: string[], event: Event) {
       console.log(`Failed to publish (${relay.url}): ${message}`);
     });
   }
+}
+
+export async function getSingleEvent(urls: string[], filter: Filter) {
+  await connect(urls);
+  const relays = getRelays(urls);
+
+  return Promise.race(
+    relays.map((relay) => {
+      return relay.get(filter);
+    })
+  );
 }

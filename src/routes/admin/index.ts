@@ -17,14 +17,13 @@ adminRouter.use(async (ctx, next) => {
   try {
     await next();
   } catch (err) {
-    if (!err.status) {
-      console.log(err);
-    } else if (err.status === 401) {
+    console.log(err);
+    if (err.status === 401) {
       ctx.set("WWW-Authenticate", "Basic");
     }
 
     ctx.status = err.statusCode || err.status || 500;
-    ctx.render("error", { error: err });
+    return ctx.render("error", { error: err });
   }
 });
 

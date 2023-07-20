@@ -16,13 +16,15 @@ import { getAddressMetadata } from "../helpers/lightning-address.js";
 import { BadRequestError, ConflictError } from "../helpers/errors.js";
 import { averageFee, estimatedFee, recordFee } from "../fees.js";
 import { getInvoiceFromLNAddress } from "../helpers/lnurl.js";
-import { connect, publish } from "../relays.js";
+import { connect, getSingleEvent, publish } from "../relays.js";
 import { NOSTR_RELAYS } from "../env.js";
 import { lightning } from "../backend/index.js";
+import Target from "./target.js";
 
 type SplitTarget = {
   id: string;
   address: string;
+  pubkey?: string;
   weight: number;
 };
 type PendingInvoice = {
@@ -35,6 +37,7 @@ type PendingInvoice = {
 };
 type PendingPayout = {
   address: string;
+  pubkey?: string;
   amount: number;
   weight: number;
   lnurlComment?: string;
@@ -42,23 +45,72 @@ type PendingPayout = {
   zapRequest?: string;
 };
 
-export type SplitJson = {
-  privateKey: string;
+async function getTargetFromNpub(npub: string) {
+  const parsed = nip19.decode(npub);
+  let pubkey: string;
+  switch (parsed.type) {
+    case "npub":
+      pubkey = parsed.data;
+      break;
+    case "nprofile":
+      pubkey = parsed.data.pubkey;
+      break;
+    default:
+      throw new BadRequestError(`Unknown NIP-19 type ${parsed.type}`);
+  }
+
+  const kind0 = await getSingleEvent(NOSTR_RELAYS, {
+    authors: [pubkey],
+    kinds: [0],
+  });
+
+  if (!kind0) throw new Error("Failed to find pubkey metadata");
+
+  const metadata = JSON.parse(kind0.content);
+  if (!metadata.lud16)
+    throw new Error("pubkey missing lightning address (lud16)");
+
+  return {
+    pubkey,
+    address: metadata.lud16 as string,
+  };
+}
+async function getTargetFromLNAddress(address: string) {
+  const metadata = await getAddressMetadata(address);
+  if (!metadata) throw new BadRequestError(`Unreachable address ${address}`);
+
+  return { address };
+}
+
+async function getTargetFromString(
+  target: string
+): Promise<{ address: string; pubkey?: string }> {
+  if (target.startsWith("npub1")) {
+    return await getTargetFromNpub(target);
+  } else if (target.split("@").length === 2) {
+    return await getTargetFromLNAddress(target);
+  }
+}
+
+type SplitJson = {
   id: string;
   name: string;
   domain: string;
   apiKey: string;
-  targets: SplitTarget[];
+  targets: ReturnType<Target["toJSON"]>[];
   invoices: PendingInvoice[];
   payouts: PendingPayout[];
+  enableNostr: boolean;
+  privateKey: string;
 };
 
 export class Split {
   privateKey: string;
+  enableNostr: boolean = true;
   id: string;
   name: string;
   domain: string;
-  targets: SplitTarget[] = [];
+  targets: Target[] = [];
   invoices: PendingInvoice[] = [];
   payouts: PendingPayout[] = [];
   log: Debugger;
@@ -111,11 +163,16 @@ export class Split {
   }
 
   async updateNostrProfile() {
+    if (!this.enableNostr) return;
+
     const targets = this.targets
-      .map(
-        (t) =>
-          `${t.address}: ${((t.weight / this.totalWeight) * 100).toFixed(2)}%`
-      )
+      .map((t) => {
+        const target = t.pubkey
+          ? `nostr:${nip19.npubEncode(t.pubkey)}`
+          : t.address;
+        const percent = ((t.weight / this.totalWeight) * 100).toFixed(2);
+        return `${target} ${percent}%`;
+      })
       .join("\n");
 
     const metadata = {
@@ -177,21 +234,18 @@ export class Split {
     return satsToMsats(100000); // 100,000 sats
   }
 
-  getTarget(id: string): SplitTarget | undefined {
+  getTarget(id: string): Target | undefined {
     return this.targets.find((target) => target.id == id);
   }
-  hasTarget(address: string) {
-    return this.targets.some((t) => t.address === address);
+  getTargetByInput(input: string): Target | undefined {
+    return this.targets.find((t) => t.input === input);
   }
-  async addTarget(address: string, weight: number) {
-    if (this.targets.find((p) => p.address === address))
-      throw new ConflictError("That address already exists");
 
-    // test address
-    if (!(await getAddressMetadata(address)))
-      throw new BadRequestError(`Unreachable address ${address}`);
+  async addTarget(input: string, weight: number) {
+    if (this.getTargetByInput(input))
+      throw new ConflictError(`A target with ${input} already exists`);
 
-    this.targets.push({ id: nanoid(), address, weight });
+    this.targets.push(await Target.fromInput(input, weight));
 
     await this.updateNostrProfile();
   }
@@ -200,30 +254,20 @@ export class Split {
 
     await this.updateNostrProfile();
   }
-  async replaceTargets(targets: { address: string; weight: number }[]) {
-    const dedupe: Record<string, number> = {};
-    for (const { address, weight } of targets) {
-      dedupe[address] = weight;
-    }
-
+  async replaceTargets(targets: { input: string; weight: number }[]) {
     this.targets = [];
-    for (const [address, weight] of Object.entries(dedupe)) {
-      if (!(await getAddressMetadata(address)))
-        throw new BadRequestError(`Unreachable address ${address}`);
-      this.targets.push({ id: nanoid(), address, weight });
+    for (const { input, weight } of targets) {
+      this.targets.push(await Target.fromInput(input, weight));
     }
 
     await this.updateNostrProfile();
   }
-  async updateTarget(
-    id: string,
-    fields: { address?: string; weight?: number }
-  ) {
+  async updateTarget(id: string, input: string, weight?: number) {
     const target = this.getTarget(id);
+    if (!target) throw new Error(`No target with id, ${id}`);
 
-    if (!target) throw new Error(`no target with id, ${id}`);
+    await target.update(input, weight);
 
-    Object.assign(target, fields);
     await this.updateNostrProfile();
   }
 
@@ -261,7 +305,7 @@ export class Split {
     const totalWeight = this.totalWeight;
     this.log(`Received ${msatsToSats(invoice.amount)} sats`);
 
-    for (const { address, weight } of this.targets) {
+    for (const { address, weight, pubkey } of this.targets) {
       const payoutAmount = Math.round((weight / totalWeight) * invoice.amount);
 
       const payout: PendingPayout = {
@@ -270,6 +314,7 @@ export class Split {
         amount: payoutAmount,
         lnurlComment: invoice.lnurlComment,
         zapRequest: invoice.zapRequest,
+        pubkey,
       };
 
       this.payouts.push(payout);
@@ -310,29 +355,22 @@ export class Split {
       let zapRequest: Event;
 
       // create zap requests for each payout pubkey
-      // TODO: find the payouts pubkey
-      // if (payout.zapRequest) {
-      //   const parsed = JSON.parse(payout.zapRequest) as Event;
+      if (this.enableNostr && payout.zapRequest && payout.pubkey) {
+        const parsed = JSON.parse(payout.zapRequest) as Event;
+        const relays = parsed.tags.find((t) => t[0] === "relays").slice(1);
 
-      //   const tags = parsed.tags.map((tag) => {
-      //     if (tag[0] === "amount") {
-      //       return ["amount", String(amount)];
-      //     }
-      //     return tag;
-      //   });
+        const event = nip57.makeZapRequest({
+          profile: payout.pubkey,
+          event: null,
+          amount,
+          comment: `Zap from nostr:${nip19.npubEncode(parsed.pubkey)} ${
+            parsed.content
+          }`.trim(),
+          relays,
+        });
 
-      //   zapRequest = finishEvent(
-      //     {
-      //       kind: Kind.ZapRequest,
-      //       content: `Zap from nostr:${nip19.npubEncode(parsed.pubkey)} ${
-      //         parsed.content
-      //       }`.trim(),
-      //       tags,
-      //       created_at: dayjs().unix(),
-      //     },
-      //     this.privateKey
-      //   );
-      // }
+        zapRequest = finishEvent(event, this.privateKey);
+      }
 
       const payRequest = await getInvoiceFromLNAddress(
         payout.address,
@@ -377,5 +415,29 @@ export class Split {
         await this.handleInvoicePaid(id);
       }
     }
+  }
+
+  toJSON(): SplitJson {
+    return {
+      id: this.id,
+      name: this.name,
+      domain: this.domain,
+      apiKey: this.apiKey,
+      privateKey: this.privateKey,
+      targets: this.targets.map((t) => t.toJSON()),
+      invoices: this.invoices,
+      payouts: this.payouts,
+      enableNostr: this.enableNostr,
+    };
+  }
+  static fromJSON(json: SplitJson) {
+    const split = new Split(json.name, json.domain, json.privateKey);
+    split.id = json.id;
+    split.apiKey = json.apiKey;
+    split.targets = json.targets.map((tJson) => Target.fromJSON(tJson));
+    split.invoices = json.invoices;
+    split.payouts = json.payouts;
+    split.enableNostr = json.enableNostr;
+    return split;
   }
 }
