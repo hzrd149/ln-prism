@@ -168,7 +168,7 @@ export class Split {
       const fee = estimatedFee(address);
       estFees += fee;
 
-      if (metadata.minSendable) {
+      if (metadata?.minSendable) {
         maxMinSendable = Math.max(
           maxMinSendable,
           metadata.minSendable * (totalWeight / weight)

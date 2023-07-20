@@ -8,6 +8,7 @@ COPY . /app/
 RUN yarn install
 RUN yarn build
 
-ENV DB_PATH=/data/splits.json
+VOLUME "/data"
+ENV DB_PATH="/data/splits.json"
 
 ENTRYPOINT [ "node", "build/index.js" ]
