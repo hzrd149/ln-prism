@@ -1,28 +1,44 @@
+<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+
 <h1><%- split.address %></h1>
 
 <form action="/admin/split/<%- split.id %>/edit/<%- target.id %>" method="post">
   <label for="input">Target Address or npub</label>
-  <div class="h-stack flex-wrap">
-    <input
-      class="mb-0"
-      id="input"
-      name="input"
-      style="flex: 2; min-width: 2in"
-      placeholder="user@domain.com, npub1..."
-      value="<%- target.npub || target.address %>"
-    />
-    <input
-      class="mb-0"
-      type="number"
-      name="weight"
-      min="1"
-      size="3"
-      step="1"
-      placeholder="weight"
-      style="flex: 1; min-width: 1in"
-      required
-      value="<%- target.weight %>"
-    />
-    <button class="button button-outline mb-0">Save</button>
-  </div>
+  <input
+    placeholder="user@domain.com, npub1..."
+    id="input"
+    name="input"
+    style="flex: 2; min-width: 2in"
+    placeholder="user@domain.com, npub1..."
+    value="<%- target.npub || target.address %>"
+  />
+  <label for="input">Weight</label>
+  <input
+    type="number"
+    name="weight"
+    min="1"
+    size="3"
+    step="1"
+    placeholder="weight"
+    style="flex: 1; min-width: 1in"
+    required
+    value="<%- target.weight %>"
+  />
+  <button class="button button-outline mb-0">Save</button>
 </form>
+
+<h3>Scanner</h3>
+<div id="reader" style="max-height: 80vh"></div>
+
+<script type="text/javascript">
+  let html5QrcodeScanner = new Html5QrcodeScanner(
+    "reader",
+    { fps: 10, qrbox: { width: 250, height: 250 } },
+    false
+  );
+
+  html5QrcodeScanner.render((decodedText) => {
+    console.log(`Scanned ${decodedText}`);
+    document.querySelector("input[name=input]").value = decodedText;
+  });
+</script>
