@@ -1,7 +1,10 @@
+import debug from "debug";
 import { db } from "../db.js";
 import { Split } from "./split.js";
 
 const splits = new Set<Split>();
+
+const log = debug("prism:splits");
 
 export function getSplits() {
   return Array.from(splits);
@@ -35,26 +38,13 @@ export function getSplitByName(name: string, domain: string) {
 
 export function loadSplits() {
   for (const json of db.data.splits) {
-    const split = new Split(json.name, json.domain);
-    split.id = json.id;
-    split.targets = json.targets;
-    split.privateKey = json.privateKey;
-    split.invoices = json.invoices;
-    split.apiKey = json.apiKey;
+    const split = Split.fromJSON(json);
     splits.add(split);
-    return split;
   }
+
+  log(`Loaded ${splits.size} splits from db`);
 }
 
 export function saveSplits() {
-  db.data.splits = getSplits().map((split) => ({
-    id: split.id,
-    name: split.name,
-    domain: split.domain,
-    targets: split.targets,
-    payouts: split.payouts,
-    invoices: split.invoices,
-    privateKey: split.privateKey,
-    apiKey: split.apiKey,
-  }));
+  db.data.splits = getSplits().map((split) => split.toJSON());
 }

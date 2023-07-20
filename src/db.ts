@@ -3,8 +3,8 @@ import debug from "debug";
 import { Low } from "lowdb";
 import { JSONFile } from "lowdb/node";
 import { DB_PATH } from "./env.js";
-import type { SplitJson } from "./splits/split.js";
 import { nanoid } from "nanoid";
+import { Split } from "./splits/split.js";
 
 const log = debug("prism:db");
 const file = isAbsolute(DB_PATH) ? DB_PATH : resolve(process.cwd(), DB_PATH);
@@ -12,7 +12,7 @@ const file = isAbsolute(DB_PATH) ? DB_PATH : resolve(process.cwd(), DB_PATH);
 log(`Using ${file}`);
 
 type Schema = {
-  splits: SplitJson[];
+  splits: ReturnType<Split["toJSON"]>[];
   addressFees: Record<string, number[]>;
   rootApiKey: string;
   refreshTokens: Record<string, { token: string; expire: string }>;

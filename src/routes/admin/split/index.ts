@@ -1,6 +1,6 @@
 import Router from "@koa/router";
 import { deleteSplitRouter } from "./delete.js";
-import { splitAddressRouter } from "./target.js";
+import { splitTargetRouter } from "./target.js";
 import { StateWithSplit } from "../../params.js";
 import { editSplitRouter } from "./edit.js";
 
@@ -28,6 +28,6 @@ adminSplitRouter.use(
   editSplitRouter.allowedMethods()
 );
 adminSplitRouter.use(
-  splitAddressRouter.routes(),
-  splitAddressRouter.allowedMethods()
+  splitTargetRouter.routes(),
+  splitTargetRouter.allowedMethods()
 );

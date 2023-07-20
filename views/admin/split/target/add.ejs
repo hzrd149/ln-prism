@@ -1,18 +1,11 @@
 <h1><%- split.address %></h1>
 
 <form action="/admin/split/<%- split.id %>/add" method="post">
-  <label for="type">type</label>
-  <select name="type" id="type" disabled>
-    <option value="address">LN Address</option>
-    <option value="npub">Nostr npub</option>
-    <option value="lnurl">LNURL Pay</option>
-  </select>
-  <label for="payout">Payout</label>
+  <label for="input">Target Address or npub</label>
   <input
-    type="email"
-    placeholder="user@domain.com, npub1..., LNURL..."
-    id="payout"
-    name="payout"
+    placeholder="user@domain.com, npub1..."
+    id="input"
+    name="input"
     style="flex: 2; min-width: 2in"
     required
   />

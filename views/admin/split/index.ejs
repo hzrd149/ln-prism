@@ -16,6 +16,7 @@
   <thead>
     <tr>
       <th>Address</th>
+      <th>Nostr</th>
       <th>Weight</th>
       <th>Percent</th>
       <th>Average Fee</th>
@@ -23,22 +24,31 @@
     </tr>
   </thead>
   <tbody>
-    <% split.targets.forEach(({id, address, weight}) => { %>
+    <% split.targets.forEach((target) => { %>
     <tr>
-      <td><%- address %></td>
-      <td><%- weight %></td>
-      <td><%- ((weight/totalWeight)*100).toFixed(2) %>%</td>
+      <td><%- target.address %></td>
+      <td>
+        <% if (target.pubkey) { %>
+        <a href="https://nostrapp.link/?#<%- target.npub %>" target="_blank">
+          <img src="/nostr-icon.png" style="width: 3rem" />
+        </a>
+        <% } %>
+      </td>
+      <td><%- target.weight %></td>
+      <td><%- ((target.weight/totalWeight)*100).toFixed(2) %>%</td>
       <td>
         <%-
-        split.targetFees[id].average?split.targetFees[id].average/1000:`unknown
+        split.targetFees[target.id].average?split.targetFees[target.id].average/1000:`unknown
         (1 sat)` %>
       </td>
       <td>
-        <a href="<%- path %>/edit/<%- id %>" class="button button-outline mb-0"
+        <a
+          href="<%- path %>/edit/<%- target.id %>"
+          class="button button-outline mb-0"
           >Edit</a
         >
         <a
-          href="<%- path %>/remove/<%- id %>"
+          href="<%- path %>/remove/<%- target.id %>"
           class="button button-outline button-red mb-0"
           >Remove</a
         >
@@ -73,6 +83,7 @@
       />
     </a>
   </div>
+  <% if (split.enableNostr) { %>
   <div style="flex: 1 0">
     <h3>Nostr</h3>
     <a href="https://nostrapp.link/?#<%- split.nprofile %>" target="_blank">
@@ -83,6 +94,7 @@
       />
     </a>
   </div>
+  <% } %>
 </div>
 
 <% if (failedPayouts.length>0) { %>
@@ -128,6 +140,7 @@
       <td>API Key</td>
       <td><code><%- split.apiKey %></code></td>
     </tr>
+    <% if (split.enableNostr) { %>
     <tr>
       <td>Nostr npub</td>
       <td><code><%- split.npub %></code></td>
@@ -136,5 +149,6 @@
       <td>Nostr nsec</td>
       <td><code><%- split.nsec %></code></td>
     </tr>
+    <% } %>
   </tbody>
 </table>
