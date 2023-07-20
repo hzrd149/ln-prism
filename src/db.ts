@@ -1,12 +1,12 @@
 import { resolve, isAbsolute } from "node:path";
-import debug from "debug";
 import { Low } from "lowdb";
 import { JSONFile } from "lowdb/node";
 import { DB_PATH } from "./env.js";
 import { nanoid } from "nanoid";
 import { Split } from "./splits/split.js";
+import { appDebug } from "./debug.js";
 
-const log = debug("prism:db");
+const log = appDebug.extend("db");
 const file = isAbsolute(DB_PATH) ? DB_PATH : resolve(process.cwd(), DB_PATH);
 
 log(`Using ${file}`);

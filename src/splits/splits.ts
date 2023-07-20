@@ -1,10 +1,11 @@
 import debug from "debug";
 import { db } from "../db.js";
 import { Split } from "./split.js";
+import { appDebug } from "../debug.js";
 
 const splits = new Set<Split>();
 
-const log = debug("prism:splits");
+const log = appDebug.extend("splits");
 
 export function getSplits() {
   return Array.from(splits);

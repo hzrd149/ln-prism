@@ -1,7 +1,7 @@
-import debug from "debug";
 import { LightningBackend } from "../type.js";
 import { msatsToSats } from "../../helpers/sats.js";
 import { db } from "../../db.js";
+import { appDebug } from "../../debug.js";
 
 export type AuthData = {
   email?: string;
@@ -17,7 +17,7 @@ export class IBEXHubBackend implements LightningBackend {
   accountId: string;
 
   auth: AuthData;
-  private log = debug("prism:ibex");
+  private log = appDebug.extend("ibex");
 
   constructor(accountId: string, auth: AuthData) {
     this.accountId = accountId;
@@ -62,6 +62,11 @@ export class IBEXHubBackend implements LightningBackend {
       ...init,
       headers,
     }).then(async (res) => {
+      if (res.status === 401) {
+        await this.resetAccessToken();
+        throw new Error("IBEX: got 401, clearing access token");
+      }
+
       if (res.headers.get("content-type").includes("application/json")) {
         const json: T | { Error: string } = await res.json();
 
@@ -105,6 +110,9 @@ export class IBEXHubBackend implements LightningBackend {
       : this.auth.refreshToken;
   }
 
+  private async resetAccessToken() {
+    this.auth.accessToken = null;
+  }
   private async refreshAccessToken() {
     // refresh token expired or login again
     if (!this.auth.refreshToken) {

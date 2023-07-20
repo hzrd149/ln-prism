@@ -8,25 +8,20 @@ import {
   nip57,
 } from "nostr-tools";
 import { nanoid } from "nanoid";
-import debug, { Debugger } from "debug";
+import { Debugger } from "debug";
 import dayjs from "dayjs";
 
 import { satsToMsats, roundToSats, msatsToSats } from "../helpers/sats.js";
 import { getAddressMetadata } from "../helpers/lightning-address.js";
-import { BadRequestError, ConflictError } from "../helpers/errors.js";
+import { ConflictError } from "../helpers/errors.js";
 import { averageFee, estimatedFee, recordFee } from "../fees.js";
 import { getInvoiceFromLNAddress } from "../helpers/lnurl.js";
-import { connect, getSingleEvent, publish } from "../relays.js";
+import { connect, publish } from "../relays.js";
 import { NOSTR_RELAYS } from "../env.js";
 import { lightning } from "../backend/index.js";
 import Target from "./target.js";
+import { appDebug } from "../debug.js";
 
-type SplitTarget = {
-  id: string;
-  address: string;
-  pubkey?: string;
-  weight: number;
-};
 type PendingInvoice = {
   id: string;
   paymentHash: string;
@@ -44,53 +39,6 @@ type PendingPayout = {
   failed?: string;
   zapRequest?: string;
 };
-
-async function getTargetFromNpub(npub: string) {
-  const parsed = nip19.decode(npub);
-  let pubkey: string;
-  switch (parsed.type) {
-    case "npub":
-      pubkey = parsed.data;
-      break;
-    case "nprofile":
-      pubkey = parsed.data.pubkey;
-      break;
-    default:
-      throw new BadRequestError(`Unknown NIP-19 type ${parsed.type}`);
-  }
-
-  const kind0 = await getSingleEvent(NOSTR_RELAYS, {
-    authors: [pubkey],
-    kinds: [0],
-  });
-
-  if (!kind0) throw new Error("Failed to find pubkey metadata");
-
-  const metadata = JSON.parse(kind0.content);
-  if (!metadata.lud16)
-    throw new Error("pubkey missing lightning address (lud16)");
-
-  return {
-    pubkey,
-    address: metadata.lud16 as string,
-  };
-}
-async function getTargetFromLNAddress(address: string) {
-  const metadata = await getAddressMetadata(address);
-  if (!metadata) throw new BadRequestError(`Unreachable address ${address}`);
-
-  return { address };
-}
-
-async function getTargetFromString(
-  target: string
-): Promise<{ address: string; pubkey?: string }> {
-  if (target.startsWith("npub1")) {
-    return await getTargetFromNpub(target);
-  } else if (target.split("@").length === 2) {
-    return await getTargetFromLNAddress(target);
-  }
-}
 
 type SplitJson = {
   id: string;
@@ -123,7 +71,7 @@ export class Split {
     this.domain = domain;
     this.name = name;
 
-    this.log = debug("prism:" + this.address);
+    this.log = appDebug.extend(this.address);
   }
 
   get address() {

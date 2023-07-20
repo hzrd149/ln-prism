@@ -9,12 +9,11 @@
   "files": [
     "build",
     "views",
-    "public",
-    "bin"
+    "public"
   ],
   "scripts": {
-    "build": "tsc",
-    "dev": "DEBUG=prism:* node development.mjs",
+    "build": "rm -rf build && tsc",
+    "dev": "node development.mjs",
     "start": "node build/index.js",
     "tunnel": "tmole 3000",
     "format": "prettier -w . --ignore-path .gitignore",
