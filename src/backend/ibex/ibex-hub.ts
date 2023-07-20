@@ -71,7 +71,11 @@ export class IBEXHubBackend implements LightningBackend {
         }
 
         return json as T;
-      } else throw new Error("Expected JSON");
+      } else {
+        throw new Error(
+          `Expected JSON but got ${res.headers.get("content-type")}`
+        );
+      }
     });
   }
 

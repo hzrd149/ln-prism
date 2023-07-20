@@ -14,7 +14,7 @@ publicRouter.use(async (ctx, next) => {
     }
 
     ctx.status = err.statusCode || err.status || 500;
-    ctx.render("error", { error: err });
+    return ctx.render("error", { error: err });
   }
 });
 
