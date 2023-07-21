@@ -15,8 +15,9 @@
 <table style="white-space: nowrap">
   <thead>
     <tr>
-      <th>Address</th>
-      <th>Nostr</th>
+      <th>Type</th>
+      <th>Name</th>
+      <th>ID</th>
       <th>Weight</th>
       <th>Percent</th>
       <th>Average Fee</th>
@@ -26,14 +27,24 @@
   <tbody>
     <% split.targets.forEach((target) => { %>
     <tr>
-      <td><%- target.address %></td>
+      <td><%- target.type %></td>
       <td>
-        <% if (target.pubkey) { %>
-        <a href="https://nostrapp.link/?#<%- target.npub %>" target="_blank">
-          <img src="/nostr-icon.png" style="width: 3rem" />
+        <% if (target.type === 'nostr') { %>
+        <a
+          href="https://nostrapp.link/?#<%- target.link.replace('nostr:', '') %>"
+          target="_blank"
+        >
+          <img
+            src="/nostr-icon.png"
+            style="width: 2rem; vertical-align: middle"
+          />
+          <%- target.displayName %>
         </a>
+        <% } else if (target.type==='lnurlp') { %>
+        <a href="<%- target.link %>"><%- target.displayName %></a>
         <% } %>
       </td>
+      <td><abbr title="<%- target.input %>">ID</abbr></td>
       <td><%- target.weight %></td>
       <td><%- ((target.weight/totalWeight)*100).toFixed(2) %>%</td>
       <td>

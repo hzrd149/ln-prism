@@ -11,32 +11,29 @@ import { nanoid } from "nanoid";
 import { Debugger } from "debug";
 import dayjs from "dayjs";
 
-import { satsToMsats, roundToSats, msatsToSats } from "../helpers/sats.js";
-import { getAddressMetadata } from "../helpers/lightning-address.js";
+import { satsToMsats, msatsToSats, roundToSats } from "../helpers/sats.js";
 import { ConflictError } from "../helpers/errors.js";
-import { averageFee, estimatedFee, recordFee } from "../fees.js";
-import { getInvoiceFromLNAddress } from "../helpers/lnurl.js";
 import { connect, publish } from "../relays.js";
 import { NOSTR_RELAYS } from "../env.js";
 import { lightning } from "../backend/index.js";
-import Target from "./target.js";
+import Target, { TargetJSON } from "./targets/target.js";
 import { appDebug } from "../debug.js";
+import { getTargetType } from "./targets/index.js";
 
-type PendingInvoice = {
+type IncomingPayment = {
+  /** uuid */
   id: string;
+  /** bolt11 payment hash */
   paymentHash: string;
+  /** bolt11 */
   paymentRequest: string;
+  /** amount in msat */
   amount: number;
-  zapRequest?: string;
-  lnurlComment?: string;
-};
-type PendingPayout = {
-  address: string;
-  pubkey?: string;
-  amount: number;
-  weight: number;
-  lnurlComment?: string;
-  failed?: string;
+  /** lnurl comment or zapRequest.content */
+  comment?: string;
+  /** LN Address or pubkey */
+  identifier?: string;
+  /** the zap request event for the zap receipt */
   zapRequest?: string;
 };
 
@@ -45,9 +42,8 @@ type SplitJson = {
   name: string;
   domain: string;
   apiKey: string;
-  targets: ReturnType<Target["toJSON"]>[];
-  invoices: PendingInvoice[];
-  payouts: PendingPayout[];
+  targets: TargetJSON[];
+  pending: IncomingPayment[];
   enableNostr: boolean;
   privateKey: string;
 };
@@ -59,9 +55,9 @@ export class Split {
   name: string;
   domain: string;
   targets: Target[] = [];
-  invoices: PendingInvoice[] = [];
-  payouts: PendingPayout[] = [];
   log: Debugger;
+
+  pending: IncomingPayment[] = [];
 
   apiKey = nanoid();
 
@@ -101,25 +97,31 @@ export class Split {
   get targetFees() {
     const fees: Record<string, { estimate: number; average?: number }> = {};
     for (const target of this.targets) {
+      const avg = target.getAverageFee();
       fees[target.id] = {
-        estimate: estimatedFee(target.address),
-        average: averageFee(target.address),
+        estimate: avg ?? 1000,
+        average: avg,
       };
     }
 
     return fees;
+  }
+  get estimatedFee() {
+    return msatsToSats(
+      this.targets.reduce(
+        (fee, target) => fee + (target.getAverageFee() ?? 1000),
+        0
+      )
+    );
   }
 
   async updateNostrProfile() {
     if (!this.enableNostr) return;
 
     const targets = this.targets
-      .map((t) => {
-        const target = t.pubkey
-          ? `nostr:${nip19.npubEncode(t.pubkey)}`
-          : t.address;
-        const percent = ((t.weight / this.totalWeight) * 100).toFixed(2);
-        return `${target} ${percent}%`;
+      .map((target) => {
+        const percent = ((target.weight / this.totalWeight) * 100).toFixed(2);
+        return `${target.link} ${percent}%`;
       })
       .join("\n");
 
@@ -162,24 +164,21 @@ export class Split {
 
     let estFees = 0;
     let maxMinSendable = 0;
-    for (const { address, weight } of this.targets) {
-      const metadata = await getAddressMetadata(address);
+    for (const target of this.targets) {
+      const min = await target.getMinSendable();
 
-      const fee = estimatedFee(address);
-      estFees += fee;
+      estFees += target.getAverageFee() ?? 1000;
 
-      if (metadata?.minSendable) {
-        maxMinSendable = Math.max(
-          maxMinSendable,
-          metadata.minSendable * (totalWeight / weight)
-        );
-      }
+      maxMinSendable = Math.max(
+        maxMinSendable,
+        min * (totalWeight / target.weight)
+      );
     }
 
     return maxMinSendable + estFees;
   }
   async getMaxSendable() {
-    return satsToMsats(100000); // 100,000 sats
+    return satsToMsats(500000); // 500,000 sats
   }
 
   getTarget(id: string): Target | undefined {
@@ -189,11 +188,12 @@ export class Split {
     return this.targets.find((t) => t.input === input);
   }
 
-  async addTarget(input: string, weight: number) {
-    if (this.getTargetByInput(input))
-      throw new ConflictError(`A target with ${input} already exists`);
+  async addTarget(target: Target) {
+    if (this.getTargetByInput(target.input))
+      throw new ConflictError(`A target with ${target.input} already exists`);
 
-    this.targets.push(await Target.fromInput(input, weight));
+    this.targets.push(target);
+    target.parentSplit = this;
 
     await this.updateNostrProfile();
   }
@@ -202,28 +202,37 @@ export class Split {
 
     await this.updateNostrProfile();
   }
-  async replaceTargets(targets: { input: string; weight: number }[]) {
-    this.targets = [];
-    for (const { input, weight } of targets) {
-      this.targets.push(await Target.fromInput(input, weight));
-    }
+  // async replaceTargets(targets: { input: string; weight: number }[]) {
+  //   this.targets = [];
+  //   for (const { input, weight } of targets) {
+  //     this.targets.push(await Target.fromInput(input, weight));
+  //   }
 
-    await this.updateNostrProfile();
-  }
+  //   await this.updateNostrProfile();
+  // }
   async updateTarget(id: string, input: string, weight?: number) {
     const target = this.getTarget(id);
     if (!target) throw new Error(`No target with id, ${id}`);
 
-    await target.update(input, weight);
+    await target.setInput(input);
+    if (weight) target.weight = weight;
 
     await this.updateNostrProfile();
   }
 
   async createInvoice(
     amount: number,
-    description?: string,
-    lnurlComment?: string,
-    zapRequest?: string
+    {
+      description,
+      lnurlComment,
+      lnurlIdentifier,
+      zapRequest,
+    }: {
+      description?: string;
+      lnurlComment?: string;
+      lnurlIdentifier?: string;
+      zapRequest?: string;
+    }
   ) {
     const id = nanoid();
     const invoice = await lightning.createInvoice(
@@ -232,56 +241,57 @@ export class Split {
       `https://${this.domain}/webhook/${this.id}/${id}`
     );
 
-    if (!invoice.paymentHash) throw new Error("missing paymentHash");
+    if (!invoice.paymentHash) throw new Error("Missing paymentHash");
 
-    this.invoices.push({
+    let comment: string;
+    let identifier: string;
+    if (zapRequest) {
+      const parsed = JSON.parse(zapRequest) as Event;
+      comment = parsed.content;
+      identifier = parsed.pubkey;
+    } else {
+      comment = lnurlComment;
+      identifier = lnurlIdentifier;
+    }
+
+    this.pending.push({
       id,
       amount,
       paymentRequest: invoice.paymentRequest,
       paymentHash: invoice.paymentHash,
-      lnurlComment,
+      comment,
+      identifier,
       zapRequest,
     });
 
     return invoice;
   }
 
-  async handleInvoicePaid(id: string) {
-    const invoice = this.invoices.find((p) => p.id === id);
-    this.invoices = this.invoices.filter((p) => p.id !== id);
+  async handlePaid(id: string) {
+    const incoming = this.pending.find((o) => o.id === id);
+
+    // remove it from the array
+    this.pending = this.pending.filter((p) => p.id !== id);
 
     const totalWeight = this.totalWeight;
-    this.log(`Received ${msatsToSats(invoice.amount)} sats`);
+    this.log(`Received ${msatsToSats(incoming.amount)} sats`);
 
-    const newPayouts: PendingPayout[] = [];
-    for (const { address, weight, pubkey } of this.targets) {
-      const payoutAmount = Math.round((weight / totalWeight) * invoice.amount);
+    for (const target of this.targets) {
+      const payoutAmount = Math.round(
+        (target.weight / totalWeight) * incoming.amount
+      );
 
-      const payout: PendingPayout = {
-        address,
-        weight,
-        amount: payoutAmount,
-        lnurlComment: invoice.lnurlComment,
-        zapRequest: invoice.zapRequest,
-        pubkey,
-      };
-
-      newPayouts.push(payout);
-    }
-
-    // add payouts to list after all have been created
-    for (const payout of newPayouts) {
-      this.payouts.push(payout);
+      target.addPayout(payoutAmount, incoming.comment, incoming.identifier);
     }
 
     // publish zap receipt
-    if (invoice.zapRequest && this.privateKey) {
-      const parsed = JSON.parse(invoice.zapRequest) as Event;
+    if (incoming.zapRequest && this.privateKey) {
+      const parsed = JSON.parse(incoming.zapRequest) as Event;
       const [_, ...relays] = parsed.tags.find((t) => t[0] === "relays") ?? [];
 
       const zap = nip57.makeZapReceipt({
-        zapRequest: invoice.zapRequest,
-        bolt11: invoice.paymentRequest,
+        zapRequest: incoming.zapRequest,
+        bolt11: incoming.paymentRequest,
         paidAt: new Date(),
       });
 
@@ -298,80 +308,20 @@ export class Split {
   }
 
   async payNext() {
-    const payout = this.payouts.find((p) => !p.failed);
-    if (!payout) return;
-
-    // remove the payout from the array
-    const idx = this.payouts.indexOf(payout);
-    if (idx > -1) this.payouts.splice(idx, 1);
-
-    // payout amount - estimated fees and round to the nearest sat (since most LN nodes don't support msats)
-    const estFee = estimatedFee(payout.address);
-    const amount = roundToSats(payout.amount - estFee);
-
-    try {
-      let zapRequest: Event;
-
-      // create zap requests for each payout pubkey
-      if (this.enableNostr && payout.zapRequest && payout.pubkey) {
-        const parsed = JSON.parse(payout.zapRequest) as Event;
-        const relays = parsed.tags.find((t) => t[0] === "relays").slice(1);
-
-        const event = nip57.makeZapRequest({
-          profile: payout.pubkey,
-          event: null,
-          amount,
-          comment: `Zap from nostr:${nip19.npubEncode(parsed.pubkey)} ${
-            parsed.content
-          }`.trim(),
-          relays,
-        });
-
-        zapRequest = finishEvent(event, this.privateKey);
-      }
-
-      const payRequest = await getInvoiceFromLNAddress(
-        payout.address,
-        amount,
-        payout.lnurlComment,
-        zapRequest && JSON.stringify(zapRequest)
-      );
-
-      const { paymentHash, fee } = await lightning.payInvoice(payRequest);
-
-      this.log(
-        `${zapRequest ? "Zapped" : "Paid"} ${payout.address} ${msatsToSats(
-          amount
-        )} sats ( fee: ${fee / 1000}, est fee: ${estFee / 1000} )`
-      );
-
-      recordFee(payout.address, fee);
-
-      return paymentHash;
-    } catch (e) {
-      // log error
-      if (e instanceof Error) {
-        this.log("Failed:" + e.message);
-        payout.failed = e.message;
-      } else {
-        this.log(e);
-        payout.failed = "unknown";
-      }
-
-      // add the payout back into the array
-      this.payouts.push(payout);
+    for (const target of this.targets) {
+      await target.payNext();
     }
   }
 
   // manually check if pending invoices are complete
   async manualCheck() {
-    for (const { paymentHash, id } of this.invoices) {
+    for (const { paymentHash, id } of this.pending) {
       try {
         this.log(`Checking ${paymentHash}`);
         const complete = await lightning.checkInvoiceComplete(paymentHash);
 
         if (complete) {
-          await this.handleInvoicePaid(id);
+          await this.handlePaid(id);
         }
       } catch (e) {
         this.log(`Failed to check invoice ${id}`);
@@ -388,18 +338,29 @@ export class Split {
       apiKey: this.apiKey,
       privateKey: this.privateKey,
       targets: this.targets.map((t) => t.toJSON()),
-      invoices: this.invoices,
-      payouts: this.payouts,
+      pending: this.pending,
       enableNostr: this.enableNostr,
     };
   }
-  static fromJSON(json: SplitJson) {
+  static async fromJSON(json: SplitJson) {
     const split = new Split(json.name, json.domain, json.privateKey);
     split.id = json.id;
     split.apiKey = json.apiKey;
-    split.targets = json.targets.map((tJson) => Target.fromJSON(tJson));
-    split.invoices = json.invoices;
-    split.payouts = json.payouts;
+    split.targets = [];
+    for (const targetJson of json.targets) {
+      const Type = getTargetType(targetJson.type);
+
+      const target = new Type(targetJson.id);
+      await target.setInput(targetJson.input);
+      target.weight = targetJson.weight;
+      target.fixed = targetJson.fixed;
+      target.forwardComment = targetJson.forwardComment;
+      target.pending = targetJson.pending;
+
+      split.targets.push(target);
+      target.parentSplit = split;
+    }
+    split.pending = json.pending;
     split.enableNostr = json.enableNostr;
     return split;
   }

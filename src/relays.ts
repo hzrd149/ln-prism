@@ -48,7 +48,10 @@ export async function publish(urls: string[], event: Event) {
   }
 }
 
-export async function getSingleEvent(urls: string[], filter: Filter) {
+export async function getSingleEvent(
+  urls: string[],
+  filter: Filter
+): Promise<Event> {
   await connect(urls);
   const relays = getRelays(urls);
 

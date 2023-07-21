@@ -15,7 +15,7 @@ type Schema = {
   splits: ReturnType<Split["toJSON"]>[];
   addressFees: Record<string, number[]>;
   rootApiKey: string;
-  refreshTokens: Record<string, { token: string; expire: string }>;
+  refreshTokens: Record<string, { token: string; expire: number }>;
 };
 
 // Configure lowdb to write data to JSON file

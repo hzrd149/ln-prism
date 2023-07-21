@@ -9,7 +9,7 @@ webhookRouter.all<StateWithSplit, { id: string }>(
     const id = ctx.params.id;
     const split = ctx.state.split;
 
-    await split.handleInvoicePaid(id);
+    await split.handlePaid(id);
 
     ctx.body = "success";
   }

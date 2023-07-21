@@ -13,7 +13,9 @@ adminSplitRouter.get<StateWithSplit>("/", (ctx) => {
 
   return ctx.render("admin/split/index", {
     totalWeight: split.targets.reduce((v, p) => v + p.weight, 0),
-    failedPayouts: split.payouts.filter((p) => p.failed),
+    failedPayouts: Array.from(split.targets.map((t) => t.pending))
+      .flat()
+      .filter((p) => p.failed),
   });
 });
 

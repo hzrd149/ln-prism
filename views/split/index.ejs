@@ -1,9 +1,7 @@
 <h1><%- split.address %></h1>
 
 <form action="/split/<%- split.name %>/invoice" method="get">
-  <label for="address"
-    >Create invoice ( Split fees: <%- estimatedFees %> sats )</label
-  >
+  <label for="address">Create invoice</label>
   <div class="h-stack">
     <input
       type="number"
@@ -22,19 +20,32 @@
 <table>
   <thead>
     <tr>
-      <th>Address</th>
-      <th>Weight</th>
+      <th>Destination</th>
       <th>Percent</th>
       <th>Estimated Fee</th>
     </tr>
   </thead>
   <tbody>
-    <% split.targets.forEach(({id, address, weight}) => { %>
+    <% split.targets.forEach((target) => { %>
     <tr>
-      <td><%- address %></td>
-      <td><%- weight %></td>
-      <td><%- ((weight/totalWeight)*100).toFixed(2) %>%</td>
-      <td><%- split.targetFees[id].estimate/1000 %></td>
+      <td>
+        <% if (target.type === 'nostr') { %>
+        <a
+          href="https://nostrapp.link/?#<%- target.link.replace('nostr:', '') %>"
+          target="_blank"
+        >
+          <img
+            src="/nostr-icon.png"
+            style="width: 2rem; vertical-align: middle"
+          />
+          <%- target.displayName %>
+        </a>
+        <% } else if (target.type==='lnurlp') { %>
+        <a href="<%- target.link %>"><%- target.displayName %></a>
+        <% } %>
+      </td>
+      <td><%- ((target.weight/totalWeight)*100).toFixed(2) %>%</td>
+      <td><%- split.targetFees[target.id].estimate/1000 %></td>
     </tr>
     <% }) %>
   </tbody>

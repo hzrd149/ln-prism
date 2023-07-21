@@ -2,14 +2,17 @@ import { LightningBackend } from "../type.js";
 import { msatsToSats } from "../../helpers/sats.js";
 import { db } from "../../db.js";
 import { appDebug } from "../../debug.js";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc.js";
+dayjs.extend(utc);
 
 export type AuthData = {
   email?: string;
   password?: string;
   accessToken?: string;
-  accessTokenExpiresAt?: Date;
+  accessTokenExpiresAt?: number;
   refreshToken?: string;
-  refreshTokenExpiresAt?: Date;
+  refreshTokenExpiresAt?: number;
 };
 
 export class IBEXHubBackend implements LightningBackend {
@@ -28,9 +31,8 @@ export class IBEXHubBackend implements LightningBackend {
     // attempt to load the refresh token from the db
     if (db.data.refreshTokens[this.baseUrl]) {
       this.auth.refreshToken = db.data.refreshTokens[this.baseUrl].token;
-      this.auth.refreshTokenExpiresAt = new Date(
-        db.data.refreshTokens[this.baseUrl].expire
-      );
+      this.auth.refreshTokenExpiresAt =
+        db.data.refreshTokens[this.baseUrl].expire;
       this.log("Loaded refresh token from db");
     }
 
@@ -100,12 +102,12 @@ export class IBEXHubBackend implements LightningBackend {
   }
 
   get accessToken(): string | undefined {
-    return this.auth.accessTokenExpiresAt < new Date()
+    return this.auth.accessTokenExpiresAt < dayjs().utc().unix()
       ? undefined
       : this.auth.accessToken;
   }
   get refreshToken(): string | undefined {
-    return this.auth.refreshTokenExpiresAt < new Date()
+    return this.auth.refreshTokenExpiresAt < dayjs().utc().unix()
       ? undefined
       : this.auth.refreshToken;
   }
@@ -134,14 +136,14 @@ export class IBEXHubBackend implements LightningBackend {
 
       this.log("Got access and refresh tokens");
       this.auth.accessToken = accessToken;
-      this.auth.accessTokenExpiresAt = new Date(accessTokenExpiresAt * 1000);
+      this.auth.accessTokenExpiresAt = accessTokenExpiresAt as number;
       this.auth.refreshToken = refreshToken;
-      this.auth.refreshTokenExpiresAt = new Date(refreshTokenExpiresAt * 1000);
+      this.auth.refreshTokenExpiresAt = refreshTokenExpiresAt as number;
 
       // save refresh token to db
       db.data.refreshTokens[this.baseUrl] = {
         token: this.auth.refreshToken,
-        expire: this.auth.refreshTokenExpiresAt.toISOString(),
+        expire: this.auth.refreshTokenExpiresAt,
       };
       this.log("Saved refresh token to db");
 
@@ -157,7 +159,7 @@ export class IBEXHubBackend implements LightningBackend {
 
       this.log("Got new access token");
       this.auth.accessToken = result.accessToken as string;
-      this.auth.accessTokenExpiresAt = new Date(result.expiresAt * 1000);
+      this.auth.accessTokenExpiresAt = result.expiresAt;
     }
 
     return this.auth.accessToken;
@@ -200,7 +202,4 @@ export class IBEXHubBackend implements LightningBackend {
     const result = await this.requestWithAuth(`/invoice/from-hash/${hash}`);
     return result.state.name === "SETTLED";
   }
-  // async checkPaymentComplete(hash: string): Promise<boolean> {
-  //   return false;
-  // }
 }

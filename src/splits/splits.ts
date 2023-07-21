@@ -1,4 +1,3 @@
-import debug from "debug";
 import { db } from "../db.js";
 import { Split } from "./split.js";
 import { appDebug } from "../debug.js";
@@ -37,9 +36,9 @@ export function getSplitByName(name: string, domain: string) {
   return getSplits().find((s) => s.name === name && s.domain === domain);
 }
 
-export function loadSplits() {
+export async function loadSplits() {
   for (const json of db.data.splits) {
-    const split = Split.fromJSON(json);
+    const split = await Split.fromJSON(json);
     splits.add(split);
   }
 
