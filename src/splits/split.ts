@@ -19,6 +19,7 @@ import { lightning } from "../backend/index.js";
 import Target, { TargetJSON } from "./targets/target.js";
 import { appDebug } from "../debug.js";
 import { getTargetType } from "./targets/index.js";
+import { InvoiceStatus } from "../backend/type.js";
 
 type IncomingPayment = {
   /** uuid */
@@ -318,13 +319,17 @@ export class Split {
     for (const { paymentHash, id } of this.pending) {
       try {
         this.log(`Checking ${paymentHash}`);
-        const complete = await lightning.checkInvoiceComplete(paymentHash);
+        const status = await lightning.getInvoiceStatus(paymentHash);
 
-        if (complete) {
+        if (status === InvoiceStatus.PAID) {
           await this.handlePaid(id);
+        } else if (status === InvoiceStatus.EXPIRED) {
+          // remove the invoice from the pending array
+          this.log(`Invoice ${paymentHash} expired`);
+          this.pending = this.pending.filter((i) => i.id !== id);
         }
       } catch (e) {
-        this.log(`Failed to check invoice ${id}`);
+        this.log(`Failed to check invoice ${paymentHash}`);
         this.log(e);
       }
     }

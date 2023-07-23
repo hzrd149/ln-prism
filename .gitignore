@@ -2,3 +2,4 @@ node_modules
 build
 .env
 splits.json
+fly.toml

@@ -1,4 +1,4 @@
-import { LightningBackend } from "../type.js";
+import { InvoiceStatus, LightningBackend } from "../type.js";
 import { msatsToSats } from "../../helpers/sats.js";
 import { db } from "../../db.js";
 import { appDebug } from "../../debug.js";
@@ -198,8 +198,17 @@ export class IBEXHubBackend implements LightningBackend {
     };
   }
 
-  async checkInvoiceComplete(hash: string): Promise<boolean> {
+  async getInvoiceStatus(hash: string) {
     const result = await this.requestWithAuth(`/invoice/from-hash/${hash}`);
-    return result.state.name === "SETTLED";
+
+    switch (result.state.name) {
+      case "CANCEL":
+        return InvoiceStatus.EXPIRED;
+      case "SETTLED":
+        return InvoiceStatus.PAID;
+      default:
+      case "OPEN":
+        return InvoiceStatus.PENDING;
+    }
   }
 }

@@ -27,7 +27,7 @@ splitRouter.get<StateWithSplit>("/split/:splitName/invoice", async (ctx) => {
 
   const { paymentRequest, paymentHash } = await split.createInvoice(
     satsToMsats(amount),
-    {}
+    { description: "manual" }
   );
 
   await ctx.render("split/invoice", {

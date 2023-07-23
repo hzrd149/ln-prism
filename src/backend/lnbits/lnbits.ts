@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { msatsToSats } from "../../helpers/sats.js";
-import { LightningBackend } from "../type.js";
+import { InvoiceStatus, LightningBackend } from "../type.js";
 import { appDebug } from "../../debug.js";
 
 export default class LNBitsBackend implements LightningBackend {
@@ -98,18 +98,14 @@ export default class LNBitsBackend implements LightningBackend {
     };
   }
 
-  async checkInvoiceComplete(hash: string) {
+  async getInvoiceStatus(hash: string) {
     try {
       const result = await this.request(`/api/v1/payments/${hash}`);
-      return result.paid as boolean;
-    } catch (e) {}
-    return false;
+      if (result.paid) return InvoiceStatus.PAID;
+      else return InvoiceStatus.PENDING;
+    } catch (e) {
+      // payment expired or no longer exists
+      return InvoiceStatus.EXPIRED;
+    }
   }
-  // async checkPaymentComplete(hash: string) {
-  //   try {
-  //     const result = await this.request(`/api/v1/payments/${hash}`);
-  //     return result.paid as boolean;
-  //   } catch (e) {}
-  //   return false;
-  // }
 }
