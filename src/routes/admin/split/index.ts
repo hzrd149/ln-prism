@@ -19,6 +19,18 @@ adminSplitRouter.get<StateWithSplit>("/", (ctx) => {
   });
 });
 
+adminSplitRouter.post<StateWithSplit>("/retry-failed", async (ctx) => {
+  const split = ctx.state.split;
+
+  for (const target of split.targets) {
+    for (const pending of target.pending) {
+      delete pending.failed;
+    }
+  }
+
+  await ctx.redirect(`/admin/split/${split.id}`);
+});
+
 adminSplitRouter.use(
   "/delete",
   deleteSplitRouter.routes(),

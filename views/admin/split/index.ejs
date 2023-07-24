@@ -129,6 +129,10 @@
     <% }) %>
   </tbody>
 </table>
+
+<form action="/admin/split/<%- split.id %>/retry-failed" method="post">
+  <button class="button button-outline" type="submit">Retry All</button>
+</form>
 <% } %>
 
 <table style="white-space: nowrap">
