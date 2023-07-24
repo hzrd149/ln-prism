@@ -4,9 +4,9 @@ import { StateWithSplit } from "./params.js";
 export const webhookRouter = new Router();
 
 webhookRouter.all<StateWithSplit, { id: string }>(
-  "/webhook/:splitId/:id",
+  "/:splitId/:invoice",
   async (ctx) => {
-    const id = ctx.params.id;
+    const id = ctx.params.invoice;
     const split = ctx.state.split;
 
     await split.handlePaid(id);

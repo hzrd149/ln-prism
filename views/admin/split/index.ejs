@@ -18,9 +18,9 @@
       <th>Type</th>
       <th>Name</th>
       <th>ID</th>
-      <th>Weight</th>
       <th>Percent</th>
-      <th>Average Fee</th>
+      <th>Fee</th>
+      <th>Comments</th>
       <th></th>
     </tr>
   </thead>
@@ -45,13 +45,13 @@
         <% } %>
       </td>
       <td><abbr title="<%- target.input %>">ID</abbr></td>
-      <td><%- target.weight %></td>
       <td><%- ((target.weight/totalWeight)*100).toFixed(2) %>%</td>
       <td>
         <%-
         split.targetFees[target.id].average?split.targetFees[target.id].average/1000:`unknown
         (1 sat)` %>
       </td>
+      <td><%- target.forwardComment ? 'Yes' : 'No' %></td>
       <td>
         <a
           href="<%- path %>/edit/<%- target.id %>"

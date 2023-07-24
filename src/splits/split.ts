@@ -211,12 +211,17 @@ export class Split {
 
   //   await this.updateNostrProfile();
   // }
-  async updateTarget(id: string, input: string, weight?: number) {
+  async updateTarget(
+    id: string,
+    input: string,
+    { weight, forwardComment }: { weight?: number; forwardComment?: boolean }
+  ) {
     const target = this.getTarget(id);
     if (!target) throw new Error(`No target with id, ${id}`);
 
     await target.setInput(input);
     if (weight) target.weight = weight;
+    if (forwardComment !== undefined) target.forwardComment = forwardComment;
 
     await this.updateNostrProfile();
   }
@@ -282,7 +287,11 @@ export class Split {
         (target.weight / totalWeight) * incoming.amount
       );
 
-      target.addPayout(payoutAmount, incoming.comment, incoming.identifier);
+      if (target.forwardComment) {
+        target.addPayout(payoutAmount, incoming.comment, incoming.identifier);
+      } else {
+        target.addPayout(payoutAmount, this.address);
+      }
     }
 
     // publish zap receipt
