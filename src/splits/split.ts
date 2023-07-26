@@ -344,6 +344,20 @@ export class Split {
     }
   }
 
+  getChartData() {
+    const total = this.totalWeight;
+    return {
+      address: this.address,
+      npub: this.npub,
+      pubkey: this.pubkey,
+      targets: this.targets.map((t) => ({
+        type: t.type,
+        displayName: t.displayName,
+        percent: t.weight / total,
+      })),
+    };
+  }
+
   toJSON(): SplitJson {
     return {
       id: this.id,
