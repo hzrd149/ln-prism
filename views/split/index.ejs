@@ -1,79 +1,46 @@
 <h1><%- split.address %></h1>
 
-<form action="/split/<%- split.name %>/invoice" method="get">
-  <label for="address"
-    >Create invoice ( Split fees: <%- estimatedFees %> sats )</label
-  >
-  <div class="h-stack">
-    <input
-      type="number"
-      name="amount"
-      min="<%- minSendable %>"
-      max="<%- maxSendable %>"
-      step="1"
-      placeholder="amount"
-      required
-      class="mb-0"
-    />
-    <button class="button mb-0">Create invoice</button>
-  </div>
-</form>
-
-<table>
-  <thead>
-    <tr>
-      <th>Address</th>
-      <th>Weight</th>
-      <th>Percent</th>
-      <th>Estimated Fee</th>
-    </tr>
-  </thead>
-  <tbody>
-    <% split.targets.forEach(({id, address, weight}) => { %>
-    <tr>
-      <td><%- address %></td>
-      <td><%- weight %></td>
-      <td><%- ((weight/totalWeight)*100).toFixed(2) %>%</td>
-      <td><%- split.targetFees[id].estimate/1000 %></td>
-    </tr>
-    <% }) %>
-  </tbody>
-</table>
+<% if (split.targets.length > 1) { %> <%- include('../components/split-chart', {
+split }) %> <% } %> <%- include('../components/split-simple-table', { split })
+%>
 
 <div class="h-stack flex-wrap">
   <div style="flex: 1 0">
     <h3>LNURL</h3>
-    <a href="<%- split.lnurlp %>" target="_blank">
-      <img
-        src="/split/<%- split.id %>/lnurl.svg"
-        alt="lnurlp qr code"
-        style="width: 100%; max-width: 3in; min-width: 2in"
-      />
-    </a>
+    <%- include('../components/split-lnurl-qr', { split }) %>
   </div>
   <div style="flex: 1 0">
     <h3>LN Address</h3>
-    <a href="lightning:<%- split.address %>" target="_blank">
-      <img
-        src="/split/<%- split.id %>/address.svg"
-        alt="address qr code"
-        style="width: 100%; max-width: 3in; min-width: 2in"
-      />
-    </a>
+    <%- include('../components/split-ln-address-qr', { split }) %>
   </div>
   <% if (split.enableNostr) { %>
   <div style="flex: 1 0">
     <h3>Nostr</h3>
-    <a href="https://nostrapp.link/?#<%- split.nprofile %>" target="_blank">
-      <img
-        src="/split/<%- split.id %>/nostr.svg"
-        alt="nostr qr code"
-        style="width: 100%; max-width: 3in; min-width: 2in"
-      />
-    </a>
+    <%- include('../components/split-nostr-qr', { split }) %>
   </div>
   <% } %>
 </div>
+
+<form action="/split/<%- split.name %>/invoice" method="get">
+  <label for="address">Manually create invoice</label>
+  <input
+    type="number"
+    name="amount"
+    min="<%- minSendable %>"
+    max="<%- maxSendable %>"
+    step="1"
+    placeholder="amount"
+    required
+    value="<%- minSendable+5 %>"
+  />
+  <textarea
+    type="text"
+    name="comment"
+    maxlength="200"
+    placeholder="Comment"
+  ></textarea>
+  <button class="button mb-0">Create invoice</button>
+</form>
 
 <table style="white-space: nowrap">
   <thead>

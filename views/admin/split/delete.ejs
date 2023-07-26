@@ -2,11 +2,7 @@
   <div class="card">
     <div class="card-header">Delete <%- split.address %>?</div>
     <div class="card-body">
-      <ul style="margin-bottom: 0">
-        <% for( let {address, weight} of split.targets ) { %>
-        <li style="margin-bottom: 0"><%- address %> <%- weight %></li>
-        <% } %>
-      </ul>
+      <%- include('../../components/split-simple-table', { split } ) %>
     </div>
     <div class="card-footer h-stack" style="flex-direction: row-reverse">
       <button class="button button-red" type="submit">Delete</button>

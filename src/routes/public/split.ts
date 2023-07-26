@@ -1,7 +1,6 @@
 import { satsToMsats, msatsToSats } from "../../helpers/sats.js";
 import { BadRequestError } from "../../helpers/errors.js";
 import Router from "@koa/router";
-import { estimatedFee } from "../../fees.js";
 import { StateWithSplit } from "../params.js";
 
 export const splitRouter = new Router();
@@ -17,9 +16,6 @@ splitRouter.get<StateWithSplit>("/split/:splitName", async (ctx) => {
     ogImage: `https://${split.domain}/split/${split.id}/address.png`,
     minSendable: msatsToSats(await split.getMinSendable()),
     maxSendable: msatsToSats(await split.getMaxSendable()),
-    estimatedFees: msatsToSats(
-      split.targets.reduce((v, p) => v + estimatedFee(p.address), 0)
-    ),
   });
 });
 
@@ -30,7 +26,8 @@ splitRouter.get<StateWithSplit>("/split/:splitName/invoice", async (ctx) => {
   if (!amount) throw new BadRequestError("missing amount");
 
   const { paymentRequest, paymentHash } = await split.createInvoice(
-    satsToMsats(amount)
+    satsToMsats(amount),
+    { description: "manual" }
   );
 
   await ctx.render("split/invoice", {

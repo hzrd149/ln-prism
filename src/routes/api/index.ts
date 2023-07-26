@@ -84,7 +84,7 @@ apiRouter.patch<StateWithSplit>("/split/:splitId", async (ctx) => {
 
     if (!Array.isArray(targets)) throw new Error("targets must be an array");
 
-    await split.replaceTargets(targets);
+    // await split.replaceTargets(targets);
   }
 
   ctx.body = formatSplit(split);

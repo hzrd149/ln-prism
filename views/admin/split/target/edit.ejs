@@ -3,15 +3,26 @@
 <h1><%- split.address %></h1>
 
 <form action="/admin/split/<%- split.id %>/edit/<%- target.id %>" method="post">
-  <label for="input">Target Address or npub</label>
+  <% if (target.type === 'lnurlp') { %>
+  <!-- LNURL -->
+  <label for="input">Target LNURLp or LN Address</label>
   <input
-    placeholder="user@domain.com, npub1..."
     id="input"
     name="input"
-    style="flex: 2; min-width: 2in"
-    placeholder="user@domain.com, npub1..."
-    value="<%- target.npub || target.address %>"
+    placeholder="user@domain.com or lnurlp://..."
+    value="<%- target.input %>"
   />
+  <% } %> <% if (target.type === 'nostr') { %>
+  <!-- NOSTR -->
+  <label for="input">Target npub</label>
+  <input
+    id="input"
+    name="input"
+    placeholder="npub1..."
+    value="<%- target.input %>"
+  />
+  <% } %>
+
   <label for="input">Weight</label>
   <input
     type="number"
@@ -24,6 +35,11 @@
     required
     value="<%- target.weight %>"
   />
+  <div>
+    <input <%- target.forwardComment?'checked':'' %> type="checkbox"
+    id="forwardComment" name="forwardComment" />
+    <label class="label-inline" for="forwardComment">Forward Comments</label>
+  </div>
   <button class="button button-outline mb-0">Save</button>
 </form>
 

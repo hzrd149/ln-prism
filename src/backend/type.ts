@@ -7,6 +7,12 @@ type PaymentDetails = {
   fee: number;
 };
 
+export enum InvoiceStatus {
+  PENDING = "pending",
+  PAID = "paid",
+  EXPIRED = "expired",
+}
+
 export interface LightningBackend {
   setup(): Promise<void>;
   createInvoice(
@@ -15,6 +21,6 @@ export interface LightningBackend {
     webhook?: string
   ): Promise<InvoiceDetails>;
   payInvoice(invoice: string): Promise<PaymentDetails>;
-  checkInvoiceComplete(hash: string): Promise<boolean>;
+  getInvoiceStatus(hash: string): Promise<InvoiceStatus>;
   // checkPaymentComplete(hash: string): Promise<boolean>;
 }

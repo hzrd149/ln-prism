@@ -3,44 +3,34 @@
 <a class="button button-outline" href="/admin/split/<%- split.id %>/edit">
   Edit
 </a>
-<a
-  class="button button-outline button-red"
-  href="/admin/split/<%- split.id %>/delete"
->
-  Delete split
-</a>
 
 <h3>Payout</h3>
 
 <table style="white-space: nowrap">
   <thead>
     <tr>
-      <th>Address</th>
-      <th>Nostr</th>
-      <th>Weight</th>
+      <th>Type</th>
+      <th>Name</th>
+      <th>ID</th>
       <th>Percent</th>
-      <th>Average Fee</th>
+      <th>Fee</th>
+      <th>Comments</th>
       <th></th>
     </tr>
   </thead>
   <tbody>
     <% split.targets.forEach((target) => { %>
     <tr>
-      <td><%- target.address %></td>
-      <td>
-        <% if (target.pubkey) { %>
-        <a href="https://nostrapp.link/?#<%- target.npub %>" target="_blank">
-          <img src="/nostr-icon.png" style="width: 3rem" />
-        </a>
-        <% } %>
-      </td>
-      <td><%- target.weight %></td>
+      <td><%- target.type %></td>
+      <td><%- include("../../components/target-name", { target }) %></td>
+      <td><abbr title="<%- target.input %>">ID</abbr></td>
       <td><%- ((target.weight/totalWeight)*100).toFixed(2) %>%</td>
       <td>
         <%-
         split.targetFees[target.id].average?split.targetFees[target.id].average/1000:`unknown
         (1 sat)` %>
       </td>
+      <td><%- target.forwardComment ? 'Yes' : 'No' %></td>
       <td>
         <a
           href="<%- path %>/edit/<%- target.id %>"
@@ -65,34 +55,16 @@
 <div class="h-stack flex-wrap">
   <div style="flex: 1 0">
     <h3>LNURL</h3>
-    <a href="<%- split.lnurlp %>" target="_blank">
-      <img
-        src="/split/<%- split.id %>/lnurl.svg"
-        alt="lnurlp qr code"
-        style="width: 100%; max-width: 3in"
-      />
-    </a>
+    <%- include('../../components/split-lnurl-qr', { split }) %>
   </div>
   <div style="flex: 1 0">
     <h3>LN Address</h3>
-    <a href="lightning:<%- split.address %>" target="_blank">
-      <img
-        src="/split/<%- split.id %>/address.svg"
-        alt="address qr code"
-        style="width: 100%; max-width: 3in"
-      />
-    </a>
+    <%- include('../../components/split-ln-address-qr', { split }) %>
   </div>
   <% if (split.enableNostr) { %>
   <div style="flex: 1 0">
     <h3>Nostr</h3>
-    <a href="https://nostrapp.link/?#<%- split.nprofile %>" target="_blank">
-      <img
-        src="/split/<%- split.id %>/nostr.svg"
-        alt="nostr qr code"
-        style="width: 100%; max-width: 3in"
-      />
-    </a>
+    <%- include('../../components/split-nostr-qr', { split }) %>
   </div>
   <% } %>
 </div>
@@ -118,6 +90,10 @@
     <% }) %>
   </tbody>
 </table>
+
+<form action="/admin/split/<%- split.id %>/retry-failed" method="post">
+  <button class="button button-outline" type="submit">Retry All</button>
+</form>
 <% } %>
 
 <table style="white-space: nowrap">
@@ -152,3 +128,10 @@
     <% } %>
   </tbody>
 </table>
+
+<a
+  class="button button-outline button-red"
+  href="/admin/split/<%- split.id %>/delete"
+>
+  Delete split
+</a>

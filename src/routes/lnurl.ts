@@ -1,10 +1,10 @@
 import { Split } from "../splits/split.js";
 import Router from "@koa/router";
 import { roundToSats } from "../helpers/sats.js";
-import { LNURLPayMetadata, LNURLpayRequest } from "../types.js";
 import { BadRequestError } from "../helpers/errors.js";
 import { StateWithSplit } from "./params.js";
 import { nip57 } from "nostr-tools";
+import { LNURLPayMetadata, LNURLPayRequest } from "../helpers/lnurl.js";
 
 export const lnurlRouter = new Router();
 
@@ -16,7 +16,9 @@ export function buildLNURLpMetadata(split: Split): LNURLPayMetadata {
     [
       "text/long-desc",
       split.targets
-        .map((t) => `${t.address}: ${((t.weight / total) * 100).toFixed(2)}%`)
+        .map(
+          (t) => `${t.displayName}: ${((t.weight / total) * 100).toFixed(2)}%`
+        )
         .join("\n"),
     ],
   ];
@@ -35,7 +37,7 @@ lnurlRouter.get<StateWithSplit>(
       metadata: JSON.stringify(metadata),
       commentAllowed: 256,
       tag: "payRequest",
-    } as LNURLpayRequest;
+    } as LNURLPayRequest;
 
     if (split.enableNostr) {
       body.nostrPubkey = split.pubkey;
@@ -67,12 +69,11 @@ lnurlRouter.get<StateWithSplit>("/lnurlp-callback/:splitName", async (ctx) => {
     if (amount > maxSendable)
       throw new BadRequestError("amount greater than maxSendable");
 
-    const { paymentRequest } = await split.createInvoice(
-      amount,
-      JSON.stringify(metadata),
-      comment,
-      nostr
-    );
+    const { paymentRequest } = await split.createInvoice(amount, {
+      description: JSON.stringify(metadata),
+      lnurlComment: comment,
+      zapRequest: nostr,
+    });
 
     ctx.body = {
       pr: paymentRequest,

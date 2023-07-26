@@ -3,14 +3,13 @@
 
 <div class="card-grid">
   <% for( let split of splits ) { %>
-  <div class="card" style="flex-shrink: 0; min-width: 40rem; flex: 0">
-    <div class="card-header"><%- split.address %></div>
+  <div class="card">
+    <div class="card-header">
+      <a href="/admin/split/<%- split.id %>"><%- split.address %></a>
+    </div>
     <div class="card-body">
-      <ul style="margin-bottom: 0">
-        <% for( let {address, weight} of split.targets ) { %>
-        <li style="margin-bottom: 0"><%- address %> <%- weight %></li>
-        <% } %>
-      </ul>
+      <%- include("../components/split-chart", { split }) %> <%-
+      include("../components/split-simple-table", { split }) %>
     </div>
     <div class="card-footer h-stack">
       <a class="button button-outline" href="/admin/split/<%- split.id %>"

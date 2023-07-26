@@ -1,0 +1,20 @@
+<% if (split.targets.length > 0) { %>
+<table>
+  <thead>
+    <tr>
+      <th>Destination</th>
+      <th>Percent</th>
+      <th>Fee</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% split.targets.forEach((target) => { %>
+    <tr>
+      <td><%- include("./target-name", { target }) %></td>
+      <td><%- ((target.weight/split.totalWeight)*100).toFixed(2) %>%</td>
+      <td><%- split.targetFees[target.id].estimate/1000 %> sats</td>
+    </tr>
+    <% }) %>
+  </tbody>
+</table>
+<% } %>

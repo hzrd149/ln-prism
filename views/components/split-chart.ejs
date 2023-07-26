@@ -1,0 +1,24 @@
+<% if (split.targets.length > 0) { %>
+<canvas id="chart-<%- split.id %>" style="max-height: 4in"></canvas>
+
+<script>
+  {
+    const splitData = JSON.parse(`<%- JSON.stringify(split.getChartData()) %>`);
+    const ctx = document.getElementById("chart-<%- split.id %>");
+
+    new Chart(ctx, {
+      type: "pie",
+      data: {
+        labels: splitData.targets.map((t) => t.displayName),
+        datasets: [
+          {
+            label: "Percent",
+            data: splitData.targets.map((t) => t.percent * 100),
+            borderWidth: 1,
+          },
+        ],
+      },
+    });
+  }
+</script>
+<% } %>
