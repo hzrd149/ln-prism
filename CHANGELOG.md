@@ -1,5 +1,18 @@
 # ln-prism
 
+## 1.0.0
+
+### Major Changes
+
+- 03a93da: Move payout logic onto Target class
+
+### Minor Changes
+
+- b06e2a6: Add retry failed button
+- 64280de: Add QRCode scanner
+- ee76f8b: Handle expired invoices correctly
+- 9a2132a: Add fancy charts
+
 ## 0.1.0
 
 ### Minor Changes
