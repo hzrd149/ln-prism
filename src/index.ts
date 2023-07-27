@@ -21,6 +21,7 @@ import { webhookRouter } from "./routes/webhooks.js";
 import { PORT } from "./env.js";
 import { db } from "./db.js";
 import { getSplits, loadSplits, saveSplits } from "./splits/splits.js";
+import { msatsToSats, satsToMsats } from "./helpers/sats.js";
 
 const require = createRequire(import.meta.url);
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -29,6 +30,11 @@ await loadSplits();
 
 const app = new Koa();
 
+app.use((ctx, next) => {
+  ctx.state.satsToMsats = satsToMsats;
+  ctx.state.msatsToSats = msatsToSats;
+  return next();
+});
 ejs(app, {
   root: resolve(__dirname, "../views"),
   viewExt: "ejs",

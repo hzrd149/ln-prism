@@ -6,8 +6,7 @@ export function drawSvgPath(qr: QrCode, border: number): string {
   let parts: Array<string> = [];
   for (let y = 0; y < qr.size; y++) {
     for (let x = 0; x < qr.size; x++) {
-      if (qr.getModule(x, y))
-        parts.push(`M${x + border},${y + border}h1v1h-1z`);
+      if (qr.getModule(x, y)) parts.push(`M${x + border},${y + border}h1v1h-1z`);
     }
   }
   return parts.join(" ");
@@ -60,10 +59,7 @@ export function createPngQrCode(data: string, border = 2) {
           image.data[idx + 3] = 0xff;
 
           // set color
-          image.data[idx] =
-            image.data[idx + 1] =
-            image.data[idx + 2] =
-              qrcode.getModule(x, y) ? 0 : 0xff;
+          image.data[idx] = image.data[idx + 1] = image.data[idx + 2] = qrcode.getModule(x, y) ? 0 : 0xff;
         }
       }
     }

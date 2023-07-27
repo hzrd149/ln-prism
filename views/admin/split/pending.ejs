@@ -1,0 +1,24 @@
+<h2><%- split.address %></h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Identity</th>
+      <th>Comment</th>
+      <th>Amount</th>
+      <th>Status</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% for( let incoming of split.incomingPending ) { %>
+    <tr>
+      <td><%- incoming.id %></td>
+      <td><%- incoming.identity %></td>
+      <td><pre style="margin: 0"><%- incoming.comment %></pre></td>
+      <td><%- msatsToSats(incoming.amount, true) %> sats</td>
+      <td><%- incoming.status %></td>
+    </tr>
+    <% } %>
+  </tbody>
+</table>

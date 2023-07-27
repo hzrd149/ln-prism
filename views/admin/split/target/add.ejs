@@ -2,31 +2,35 @@
 
 <h1><%- split.address %></h1>
 
-<form action="/admin/split/<%- split.id %>/add" method="post">
+<form action="<%- path %>" method="post">
   <label for="type">Type</label>
   <select id="type" name="type">
     <option value="lnurlp">LNURLp</option>
     <option value="nostr">npub</option>
   </select>
   <label for="input">Target Address or npub</label>
-  <input
-    placeholder="user@domain.com, npub1..."
-    id="input"
-    name="input"
-    style="flex: 2; min-width: 2in"
-    required
-  />
-  <label for="weight">Weight</label>
-  <input
-    type="number"
-    name="weight"
-    min="1"
-    size="3"
-    step="1"
-    placeholder="weight"
-    style="flex: 1; min-width: 1in"
-    required
-  />
+  <input placeholder="user@domain.com, npub1..." id="input" name="input" style="flex: 2; min-width: 2in" required />
+  <div class="h-stack">
+    <div style="flex: 3"><%- include('../../../components/target-percent-inputs', { value: 10 }) %></div>
+    <div style="flex: 1">
+      <label for="payoutThreshold">Threshold</label>
+      <input
+        type="number"
+        id="payoutThreshold"
+        name="payoutThreshold"
+        min="0"
+        max="99"
+        size="3"
+        step="1"
+        required
+        value="90"
+      />
+    </div>
+  </div>
+  <div>
+    <input type="checkbox" id="fixed" name="fixed" checked />
+    <label class="label-inline" for="fixed">Fixed</label>
+  </div>
   <div>
     <input type="checkbox" id="forwardComment" name="forwardComment" checked />
     <label class="label-inline" for="forwardComment">Forward Comments</label>
@@ -38,11 +42,7 @@
 <div id="reader" style="max-height: 80vh"></div>
 
 <script type="text/javascript">
-  let html5QrcodeScanner = new Html5QrcodeScanner(
-    "reader",
-    { fps: 10, qrbox: { width: 250, height: 250 } },
-    false
-  );
+  let html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: { width: 250, height: 250 } }, false);
 
   html5QrcodeScanner.render((decodedText) => {
     console.log(`Scanned ${decodedText}`);

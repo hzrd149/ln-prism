@@ -1,11 +1,8 @@
 <h1><%- split.address %></h1>
 <a href="/split/<%- split.name %>" class="button">View public page</a>
-<a class="button button-outline" href="/admin/split/<%- split.id %>/edit">
-  Edit
-</a>
+<a class="button button-outline" href="/admin/split/<%- split.id %>/edit">Edit</a>
 
-<h3>Payout</h3>
-
+<% let percentages = split.getSplitPercentages() %>
 <table style="white-space: nowrap">
   <thead>
     <tr>
@@ -19,38 +16,34 @@
     </tr>
   </thead>
   <tbody>
-    <% split.targets.forEach((target) => { %>
+    <% for ( let target of split.targets ) { %>
     <tr>
       <td><%- target.type %></td>
       <td><%- include("../../components/target-name", { target }) %></td>
       <td><abbr title="<%- target.input %>">ID</abbr></td>
-      <td><%- ((target.weight/totalWeight)*100).toFixed(2) %>%</td>
-      <td>
-        <%-
-        split.targetFees[target.id].average?split.targetFees[target.id].average/1000:`unknown
-        (1 sat)` %>
-      </td>
+      <td><%- include('../../components/target-percent', { target, percentages }) %></td>
+      <td><%- msatsToSats(target.getEstimatedFee(), true) %></td>
       <td><%- target.forwardComment ? 'Yes' : 'No' %></td>
       <td>
-        <a
-          href="<%- path %>/edit/<%- target.id %>"
-          class="button button-outline mb-0"
-          >Edit</a
+        <a href="<%- path %>/<%- target.id %>/edit" class="button button-outline button-icon mb-0">📝</a>
+        <a class="button button-outline button-icon mb-0" href="<%- path %>/<%- target.id %>/pending" title="Pending"
+          >⌛</a
         >
-        <a
-          href="<%- path %>/remove/<%- target.id %>"
-          class="button button-outline button-red mb-0"
-          >Remove</a
+        <a class="button button-outline button-icon mb-0" href="<%- path %>/<%- target.id %>/history" title="History"
+          >🕐</a
         >
+        <a href="<%- path %>/<%- target.id %>/remove" class="button button-outline button-icon button-red mb-0">🗑</a>
       </td>
     </tr>
-    <% }) %>
+    <% } %>
   </tbody>
 </table>
 
-<a href="/admin/split/<%- split.id %>/add" class="button button-outline"
-  >Add payout</a
->
+<a href="<%- path %>/add" class="button">Add payout</a>
+<a href="<%- path %>/pending" class="button button-outline">View pending</a>
+<a href="<%- path %>/history" class="button button-outline">View history</a>
+
+<%- include('../../components/split-flow-chart', { split }) %>
 
 <div class="h-stack flex-wrap">
   <div style="flex: 1 0">
@@ -61,40 +54,13 @@
     <h3>LN Address</h3>
     <%- include('../../components/split-ln-address-qr', { split }) %>
   </div>
-  <% if (split.enableNostr) { %>
+  <% if (split.enableNostrProfile) { %>
   <div style="flex: 1 0">
     <h3>Nostr</h3>
     <%- include('../../components/split-nostr-qr', { split }) %>
   </div>
   <% } %>
 </div>
-
-<% if (failedPayouts.length>0) { %>
-<h3>Failed payouts</h3>
-
-<table style="white-space: nowrap">
-  <thead>
-    <tr>
-      <th>Address</th>
-      <th>Amount</th>
-      <th>Reason</th>
-    </tr>
-  </thead>
-  <tbody>
-    <% failedPayouts.forEach((payout) => { %>
-    <tr>
-      <td><%- payout.address %></td>
-      <td><%- payout.amount/1000 %> sats</td>
-      <td><%- payout.failed %></td>
-    </tr>
-    <% }) %>
-  </tbody>
-</table>
-
-<form action="/admin/split/<%- split.id %>/retry-failed" method="post">
-  <button class="button button-outline" type="submit">Retry All</button>
-</form>
-<% } %>
 
 <table style="white-space: nowrap">
   <thead>
@@ -116,7 +82,7 @@
       <td>API Key</td>
       <td><code><%- split.apiKey %></code></td>
     </tr>
-    <% if (split.enableNostr) { %>
+    <% if (split.enableNostrProfile) { %>
     <tr>
       <td>Nostr npub</td>
       <td><code><%- split.npub %></code></td>
@@ -129,9 +95,4 @@
   </tbody>
 </table>
 
-<a
-  class="button button-outline button-red"
-  href="/admin/split/<%- split.id %>/delete"
->
-  Delete split
-</a>
+<a class="button button-outline button-red" href="/admin/split/<%- split.id %>/delete"> Delete split </a>

@@ -31,24 +31,16 @@ export class IBEXHubBackend implements LightningBackend {
     // attempt to load the refresh token from the db
     if (db.data.refreshTokens[this.baseUrl]) {
       this.auth.refreshToken = db.data.refreshTokens[this.baseUrl].token;
-      this.auth.refreshTokenExpiresAt =
-        db.data.refreshTokens[this.baseUrl].expire;
+      this.auth.refreshTokenExpiresAt = db.data.refreshTokens[this.baseUrl].expire;
       this.log("Loaded refresh token from db");
     }
 
     const result = await this.requestWithAuth(`/v2/account/${this.accountId}`);
 
-    this.log(
-      `Connected to IBEX account "${result.name}" with ${msatsToSats(
-        result.balance
-      )} sats`
-    );
+    this.log(`Connected to IBEX account "${result.name}" with ${msatsToSats(result.balance)} sats`);
   }
 
-  private async request<T extends Object = any>(
-    url: string,
-    init?: RequestInit
-  ) {
+  private async request<T extends Object = any>(url: string, init?: RequestInit) {
     const fullUrl = new URL(url, this.baseUrl);
     const headers = {
       ...init?.headers,
@@ -79,17 +71,12 @@ export class IBEXHubBackend implements LightningBackend {
 
         return json as T;
       } else {
-        throw new Error(
-          `Expected JSON but got ${res.headers.get("content-type")}`
-        );
+        throw new Error(`Expected JSON but got ${res.headers.get("content-type")}`);
       }
     });
   }
 
-  private async requestWithAuth<T extends Object = any>(
-    url: string,
-    init?: RequestInit
-  ) {
+  private async requestWithAuth<T extends Object = any>(url: string, init?: RequestInit) {
     if (!this.accessToken) await this.refreshAccessToken();
 
     return this.request<T>(url, {
@@ -102,14 +89,10 @@ export class IBEXHubBackend implements LightningBackend {
   }
 
   get accessToken(): string | undefined {
-    return this.auth.accessTokenExpiresAt < dayjs().utc().unix()
-      ? undefined
-      : this.auth.accessToken;
+    return this.auth.accessTokenExpiresAt < dayjs().utc().unix() ? undefined : this.auth.accessToken;
   }
   get refreshToken(): string | undefined {
-    return this.auth.refreshTokenExpiresAt < dayjs().utc().unix()
-      ? undefined
-      : this.auth.refreshToken;
+    return this.auth.refreshTokenExpiresAt < dayjs().utc().unix() ? undefined : this.auth.refreshToken;
   }
 
   private async resetAccessToken() {
@@ -118,21 +101,18 @@ export class IBEXHubBackend implements LightningBackend {
   private async refreshAccessToken() {
     // refresh token expired or login again
     if (!this.auth.refreshToken) {
-      if (!this.auth.email || !this.auth.password)
-        throw new Error("Missing email and password");
+      if (!this.auth.email || !this.auth.password) throw new Error("Missing email and password");
 
-      const {
-        accessToken,
-        accessTokenExpiresAt,
-        refreshToken,
-        refreshTokenExpiresAt,
-      } = await this.request("/auth/signin", {
-        method: "POST",
-        body: JSON.stringify({
-          email: this.auth.email,
-          password: this.auth.password,
-        }),
-      });
+      const { accessToken, accessTokenExpiresAt, refreshToken, refreshTokenExpiresAt } = await this.request(
+        "/auth/signin",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            email: this.auth.email,
+            password: this.auth.password,
+          }),
+        }
+      );
 
       this.log("Got access and refresh tokens");
       this.auth.accessToken = accessToken;

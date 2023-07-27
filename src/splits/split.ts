@@ -1,34 +1,38 @@
-import {
-  Event,
-  Kind,
-  finishEvent,
-  generatePrivateKey,
-  getPublicKey,
-  nip19,
-  nip57,
-} from "nostr-tools";
+import { Event, Kind, finishEvent, generatePrivateKey, getPublicKey, nip19, nip57 } from "nostr-tools";
 import { nanoid } from "nanoid";
 import { Debugger } from "debug";
 import dayjs from "dayjs";
 
-import { satsToMsats, msatsToSats, roundToSats } from "../helpers/sats.js";
+import { satsToMsats, msatsToSats } from "../helpers/sats.js";
 import { ConflictError } from "../helpers/errors.js";
 import { connect, publish } from "../relays.js";
 import { NOSTR_RELAYS } from "../env.js";
 import { lightning } from "../backend/index.js";
-import Target, { TargetJSON } from "./targets/target.js";
+import Target, { OutgoingPaymentStatus, TargetJSON } from "./targets/target.js";
 import { appDebug } from "../debug.js";
 import { getTargetType } from "./targets/index.js";
 import { InvoiceStatus } from "../backend/type.js";
+import { db } from "../db.js";
 
-type IncomingPayment = {
+export enum IncomingPaymentStatus {
+  Pending = "pending",
+  Received = "received",
+  Complete = "complete",
+  Expired = "expired",
+}
+
+export type IncomingPayment = {
   /** uuid */
   id: string;
+  /** the split this applies to */
+  split: string;
+  /** status of the split */
+  status: IncomingPaymentStatus;
   /** bolt11 payment hash */
   paymentHash: string;
   /** bolt11 */
   paymentRequest: string;
-  /** amount in msat */
+  /** amount in msats */
   amount: number;
   /** lnurl comment or zapRequest.content */
   comment?: string;
@@ -36,6 +40,8 @@ type IncomingPayment = {
   identifier?: string;
   /** the zap request event for the zap receipt */
   zapRequest?: string;
+  /** and array of outgoing payments create from this invoice */
+  outgoing: string[];
 };
 
 type SplitJson = {
@@ -44,21 +50,20 @@ type SplitJson = {
   domain: string;
   apiKey: string;
   targets: TargetJSON[];
-  pending: IncomingPayment[];
-  enableNostr: boolean;
+  enableNostrZaps: boolean;
   privateKey: string;
+  enableNostrProfile: boolean;
 };
 
 export class Split {
   privateKey: string;
-  enableNostr: boolean = true;
+  enableNostrZaps: boolean = true;
+  enableNostrProfile: boolean = true;
   id: string;
   name: string;
   domain: string;
   targets: Target[] = [];
   log: Debugger;
-
-  pending: IncomingPayment[] = [];
 
   apiKey = nanoid();
 
@@ -71,11 +76,26 @@ export class Split {
     this.log = appDebug.extend(this.address);
   }
 
+  get incoming() {
+    return db.data.incoming.filter((incoming) => incoming.split === this.id);
+  }
+  get incomingPending() {
+    return db.data.incoming.filter(
+      (incoming) =>
+        incoming.split === this.id &&
+        (incoming.status === IncomingPaymentStatus.Pending || incoming.status === IncomingPaymentStatus.Received)
+    );
+  }
+  get incomingComplete() {
+    return db.data.incoming.filter(
+      (incoming) =>
+        incoming.split === this.id &&
+        (incoming.status === IncomingPaymentStatus.Complete || incoming.status === IncomingPaymentStatus.Expired)
+    );
+  }
+
   get address() {
     return this.name + "@" + this.domain;
-  }
-  get totalWeight() {
-    return this.targets.reduce((v, t) => v + t.weight, 0);
   }
   get nprofile() {
     return nip19.nprofileEncode({
@@ -95,33 +115,14 @@ export class Split {
   get lnurlp() {
     return `lnurlp://${this.domain}/lnurlp/${this.name}`;
   }
-  get targetFees() {
-    const fees: Record<string, { estimate: number; average?: number }> = {};
-    for (const target of this.targets) {
-      const avg = target.getAverageFee();
-      fees[target.id] = {
-        estimate: avg ?? 1000,
-        average: avg,
-      };
-    }
-
-    return fees;
-  }
-  get estimatedFee() {
-    return msatsToSats(
-      this.targets.reduce(
-        (fee, target) => fee + (target.getAverageFee() ?? 1000),
-        0
-      )
-    );
-  }
 
   async updateNostrProfile() {
-    if (!this.enableNostr) return;
+    if (!this.enableNostrProfile) return;
 
+    const percentages = this.getSplitPercentages();
     const targets = this.targets
       .map((target) => {
-        const percent = ((target.weight / this.totalWeight) * 100).toFixed(2);
+        const percent = (percentages[target.id] * 100).toFixed(2);
         return `${target.link} ${percent}%`;
       })
       .join("\n");
@@ -161,25 +162,34 @@ export class Split {
   }
 
   async getMinSendable() {
-    const totalWeight = this.totalWeight;
-
-    let estFees = 0;
-    let maxMinSendable = 0;
-    for (const target of this.targets) {
-      const min = await target.getMinSendable();
-
-      estFees += target.getAverageFee() ?? 1000;
-
-      maxMinSendable = Math.max(
-        maxMinSendable,
-        min * (totalWeight / target.weight)
-      );
-    }
-
-    return maxMinSendable + estFees;
+    return satsToMsats(1);
   }
   async getMaxSendable() {
     return satsToMsats(500000); // 500,000 sats
+  }
+
+  getSplitPercentages() {
+    const percentages: Record<string, number> = {};
+
+    // start at 100%
+    let remainingPercent = 1;
+
+    const fixed = this.targets.filter((t) => t.fixed);
+    for (const target of fixed) {
+      const percent = target.weight / 100;
+      if (remainingPercent >= percent) {
+        percentages[target.id] = percent;
+        remainingPercent -= percent;
+      } else percentages[target.id] = 0;
+    }
+
+    const floating = this.targets.filter((t) => !t.fixed);
+    const floatingTotal = floating.reduce((v, t) => v + t.weight, 0);
+    for (const target of floating) {
+      percentages[target.id] = Math.max(0, remainingPercent * (target.weight / floatingTotal));
+    }
+
+    return percentages;
   }
 
   getTarget(id: string): Target | undefined {
@@ -190,40 +200,38 @@ export class Split {
   }
 
   async addTarget(target: Target) {
-    if (this.getTargetByInput(target.input))
-      throw new ConflictError(`A target with ${target.input} already exists`);
+    if (this.getTargetByInput(target.input)) throw new ConflictError(`A target with ${target.input} already exists`);
 
     this.targets.push(target);
     target.parentSplit = this;
 
-    await this.updateNostrProfile();
+    this.updateNostrProfile();
   }
   async removeTarget(id: string) {
     this.targets = this.targets.filter((target) => target.id !== id);
 
-    await this.updateNostrProfile();
+    this.updateNostrProfile();
   }
-  // async replaceTargets(targets: { input: string; weight: number }[]) {
-  //   this.targets = [];
-  //   for (const { input, weight } of targets) {
-  //     this.targets.push(await Target.fromInput(input, weight));
-  //   }
-
-  //   await this.updateNostrProfile();
-  // }
   async updateTarget(
     id: string,
     input: string,
-    { weight, forwardComment }: { weight?: number; forwardComment?: boolean }
+    {
+      weight,
+      forwardComment,
+      fixed,
+      payoutThreshold,
+    }: { weight?: number; forwardComment?: boolean; fixed?: boolean; payoutThreshold?: number }
   ) {
     const target = this.getTarget(id);
     if (!target) throw new Error(`No target with id, ${id}`);
 
     await target.setInput(input);
     if (weight) target.weight = weight;
+    if (payoutThreshold !== undefined) target.payoutThreshold = payoutThreshold;
     if (forwardComment !== undefined) target.forwardComment = forwardComment;
+    if (fixed !== undefined) target.fixed = fixed;
 
-    await this.updateNostrProfile();
+    this.updateNostrProfile();
   }
 
   async createInvoice(
@@ -260,39 +268,46 @@ export class Split {
       identifier = lnurlIdentifier;
     }
 
-    this.pending.push({
+    const incoming: IncomingPayment = {
       id,
+      split: this.id,
+      status: IncomingPaymentStatus.Pending,
       amount,
       paymentRequest: invoice.paymentRequest,
       paymentHash: invoice.paymentHash,
       comment,
       identifier,
       zapRequest,
-    });
+      outgoing: [],
+    };
+
+    db.data.incoming.push(incoming);
 
     return invoice;
   }
 
   async handlePaid(id: string) {
-    const incoming = this.pending.find((o) => o.id === id);
+    const incoming = db.data.incoming.find((i) => i.id === id);
 
-    // remove it from the array
-    this.pending = this.pending.filter((p) => p.id !== id);
+    if (incoming.split !== this.id) return;
+    if (incoming.status !== IncomingPaymentStatus.Pending)
+      throw new Error(`Payouts already created for ${incoming.id}`);
 
-    const totalWeight = this.totalWeight;
+    const percentages = this.getSplitPercentages();
     this.log(`Received ${msatsToSats(incoming.amount)} sats`);
 
+    // create payouts
     for (const target of this.targets) {
-      const payoutAmount = Math.round(
-        (target.weight / totalWeight) * incoming.amount
-      );
+      const payoutAmount = Math.round(percentages[target.id] * incoming.amount);
 
-      if (target.forwardComment) {
-        target.addPayout(payoutAmount, incoming.comment, incoming.identifier);
-      } else {
-        target.addPayout(payoutAmount, this.address);
-      }
+      const payout = target.forwardComment
+        ? target.addPayout(payoutAmount, incoming.comment, incoming.identifier)
+        : target.addPayout(payoutAmount);
+
+      incoming.outgoing.push(payout.id);
     }
+
+    incoming.status = IncomingPaymentStatus.Received;
 
     // publish zap receipt
     if (incoming.zapRequest && this.privateKey) {
@@ -317,35 +332,58 @@ export class Split {
     }
   }
 
+  private updatePendingStatuses() {
+    for (const incoming of this.incomingPending) {
+      if (incoming.status === IncomingPaymentStatus.Received) {
+        let incomplete = false;
+
+        for (const id of incoming.outgoing) {
+          const payout = db.data.outgoing.find((out) => out.id === id);
+          if (payout && payout.status !== OutgoingPaymentStatus.Complete) {
+            incomplete = true;
+            break;
+          }
+        }
+
+        if (!incomplete) {
+          incoming.status = IncomingPaymentStatus.Complete;
+        }
+      }
+    }
+  }
+
   async payNext() {
     for (const target of this.targets) {
       await target.payNext();
     }
+
+    this.updatePendingStatuses();
   }
 
   // manually check if pending invoices are complete
   async manualCheck() {
-    for (const { paymentHash, id } of this.pending) {
+    for (const incoming of this.incomingPending) {
+      if (incoming.status !== IncomingPaymentStatus.Pending) continue;
+
       try {
-        this.log(`Checking ${paymentHash}`);
-        const status = await lightning.getInvoiceStatus(paymentHash);
+        this.log(`Checking ${incoming.paymentHash}`);
+        const status = await lightning.getInvoiceStatus(incoming.paymentHash);
 
         if (status === InvoiceStatus.PAID) {
-          await this.handlePaid(id);
+          await this.handlePaid(incoming.id);
         } else if (status === InvoiceStatus.EXPIRED) {
-          // remove the invoice from the pending array
-          this.log(`Invoice ${paymentHash} expired`);
-          this.pending = this.pending.filter((i) => i.id !== id);
+          this.log(`Invoice ${incoming.paymentHash} expired`);
+          incoming.status = IncomingPaymentStatus.Expired;
         }
       } catch (e) {
-        this.log(`Failed to check invoice ${paymentHash}`);
+        this.log(`Failed to check invoice ${incoming.paymentHash}`);
         this.log(e);
       }
     }
   }
 
   getChartData() {
-    const total = this.totalWeight;
+    const percentages = this.getSplitPercentages();
     return {
       address: this.address,
       npub: this.npub,
@@ -353,9 +391,31 @@ export class Split {
       targets: this.targets.map((t) => ({
         type: t.type,
         displayName: t.displayName,
-        percent: t.weight / total,
+        percent: percentages[t.id],
       })),
     };
+  }
+
+  getMermaidFlow() {
+    const percentages = this.getSplitPercentages();
+    const lines = ["flowchart TD"];
+    let lastId = 0;
+
+    const renderSplit = (split: Split, sId = "S" + lastId++) => {
+      const pId = "P" + lastId++;
+      lines.push(`${sId}("${split.address}") --> ${pId}{Prism}`);
+
+      for (const target of split.targets) {
+        const tId = "T" + lastId++;
+        lines.push(`${pId} --> |${(percentages[target.id] * 100).toFixed(2)}%| ${tId}("${target.displayName}")`);
+
+        // TODO: if target is a child split. call renderSplit again with tId
+      }
+    };
+
+    renderSplit(this);
+
+    return lines.join("\n");
   }
 
   toJSON(): SplitJson {
@@ -366,30 +426,30 @@ export class Split {
       apiKey: this.apiKey,
       privateKey: this.privateKey,
       targets: this.targets.map((t) => t.toJSON()),
-      pending: this.pending,
-      enableNostr: this.enableNostr,
+      enableNostrZaps: this.enableNostrZaps,
+      enableNostrProfile: this.enableNostrProfile,
     };
   }
   static async fromJSON(json: SplitJson) {
     const split = new Split(json.name, json.domain, json.privateKey);
     split.id = json.id;
-    split.apiKey = json.apiKey;
+    split.apiKey = json.apiKey ?? nanoid();
     split.targets = [];
     for (const targetJson of json.targets) {
       const Type = getTargetType(targetJson.type);
 
       const target = new Type(targetJson.id);
       await target.setInput(targetJson.input);
-      target.weight = targetJson.weight;
-      target.fixed = targetJson.fixed;
-      target.forwardComment = targetJson.forwardComment;
-      target.pending = targetJson.pending;
+      target.weight = targetJson.weight ?? 10;
+      target.fixed = targetJson.fixed ?? false;
+      target.forwardComment = targetJson.forwardComment ?? true;
+      target.payoutThreshold = targetJson.payoutThreshold ?? 90;
 
       split.targets.push(target);
       target.parentSplit = split;
     }
-    split.pending = json.pending;
-    split.enableNostr = json.enableNostr;
+    split.enableNostrZaps = json.enableNostrZaps ?? false;
+    split.enableNostrProfile = json.enableNostrProfile ?? false;
     return split;
   }
 }

@@ -1,8 +1,4 @@
-type MetadataType =
-  | "text/plain"
-  | "text/long-desc"
-  | "image/png;base64"
-  | "image/jpeg;base64";
+type MetadataType = "text/plain" | "text/long-desc" | "image/png;base64" | "image/jpeg;base64";
 
 export type LNURLPayMetadata = [MetadataType, string][];
 
@@ -49,20 +45,15 @@ export async function getInvoiceFromLNURL(
   const metadata = await getLNURLPMetadata(lnurlp);
 
   if (metadata.minSendable && amount < metadata.minSendable)
-    throw new Error(
-      `Amount (${amount}) less than minSendable (${metadata.minSendable})`
-    );
+    throw new Error(`Amount (${amount}) less than minSendable (${metadata.minSendable})`);
   if (metadata.maxSendable && amount > metadata.maxSendable)
-    throw new Error(
-      `Amount (${amount}) greater than maxSendable (${metadata.maxSendable})`
-    );
+    throw new Error(`Amount (${amount}) greater than maxSendable (${metadata.maxSendable})`);
 
   const callbackUrl = new URL(metadata.callback);
   callbackUrl.searchParams.append("amount", String(amount));
 
   if (metadata.commentAllowed && comment) {
-    if (comment.length > metadata.commentAllowed)
-      throw new Error("Comment too long");
+    if (comment.length > metadata.commentAllowed) throw new Error("Comment too long");
 
     callbackUrl.searchParams.append("comment", comment);
   }
@@ -71,11 +62,7 @@ export async function getInvoiceFromLNURL(
     callbackUrl.searchParams.append("nostr", zapRequest);
   }
 
-  const {
-    pr: payRequest,
-    status,
-    reason,
-  } = await fetch(callbackUrl.toString()).then((res) => res.json());
+  const { pr: payRequest, status, reason } = await fetch(callbackUrl.toString()).then((res) => res.json());
 
   if (status === "ERROR") throw new Error(reason);
 

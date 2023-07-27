@@ -9,44 +9,37 @@ import { LNURLPayMetadata, LNURLPayRequest } from "../helpers/lnurl.js";
 export const lnurlRouter = new Router();
 
 export function buildLNURLpMetadata(split: Split): LNURLPayMetadata {
-  const total = split.totalWeight;
+  const percentages = split.getSplitPercentages();
 
   return [
     ["text/plain", split.address],
     [
       "text/long-desc",
-      split.targets
-        .map(
-          (t) => `${t.displayName}: ${((t.weight / total) * 100).toFixed(2)}%`
-        )
-        .join("\n"),
+      split.targets.map((t) => `${t.displayName}: ${(percentages[t.id] * 100).toFixed(2)}%`).join("\n"),
     ],
   ];
 }
 
-lnurlRouter.get<StateWithSplit>(
-  ["/lnurlp/:splitName", "/.well-known/lnurlp/:splitName"],
-  async (ctx) => {
-    const split = ctx.state.split;
-    const metadata = buildLNURLpMetadata(split);
+lnurlRouter.get<StateWithSplit>(["/lnurlp/:splitName", "/.well-known/lnurlp/:splitName"], async (ctx) => {
+  const split = ctx.state.split;
+  const metadata = buildLNURLpMetadata(split);
 
-    const body = {
-      callback: `https://${split.domain}/lnurlp-callback/${split.name}`,
-      minSendable: roundToSats(await split.getMinSendable()),
-      maxSendable: roundToSats(await split.getMaxSendable()),
-      metadata: JSON.stringify(metadata),
-      commentAllowed: 256,
-      tag: "payRequest",
-    } as LNURLPayRequest;
+  const body = {
+    callback: `https://${split.domain}/lnurlp-callback/${split.name}`,
+    minSendable: roundToSats(await split.getMinSendable()),
+    maxSendable: roundToSats(await split.getMaxSendable()),
+    metadata: JSON.stringify(metadata),
+    commentAllowed: 256,
+    tag: "payRequest",
+  } as LNURLPayRequest;
 
-    if (split.enableNostr) {
-      body.nostrPubkey = split.pubkey;
-      body.allowsNostr = true;
-    }
-
-    ctx.body = body;
+  if (split.enableNostrZaps) {
+    body.nostrPubkey = split.pubkey;
+    body.allowsNostr = true;
   }
-);
+
+  ctx.body = body;
+});
 
 lnurlRouter.get<StateWithSplit>("/lnurlp-callback/:splitName", async (ctx) => {
   try {
@@ -64,10 +57,8 @@ lnurlRouter.get<StateWithSplit>("/lnurlp-callback/:splitName", async (ctx) => {
     const minSendable = roundToSats(await split.getMinSendable());
     const maxSendable = roundToSats(await split.getMaxSendable());
     if (!Number.isFinite(amount)) throw new BadRequestError("missing amount");
-    if (amount < minSendable)
-      throw new BadRequestError("amount less than minSendable");
-    if (amount > maxSendable)
-      throw new BadRequestError("amount greater than maxSendable");
+    if (amount < minSendable) throw new BadRequestError("amount less than minSendable");
+    if (amount > maxSendable) throw new BadRequestError("amount greater than maxSendable");
 
     const { paymentRequest } = await split.createInvoice(amount, {
       description: JSON.stringify(metadata),

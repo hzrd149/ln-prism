@@ -1,13 +1,9 @@
 import { lightning } from "../../backend/index.js";
-import { averageFee, recordFee } from "../../fees.js";
+import { averageFee, estimatedFee, recordFee } from "../../fees.js";
 import { BadRequestError } from "../../helpers/errors.js";
-import {
-  getInvoiceFromLNURL,
-  getLNURLPMetadata,
-  lnAddressToLNURLP,
-} from "../../helpers/lnurl.js";
+import { getInvoiceFromLNURL, getLNURLPMetadata, lnAddressToLNURLP } from "../../helpers/lnurl.js";
 import { msatsToSats, roundToSats, satsToMsats } from "../../helpers/sats.js";
-import Target, { OutgoingPayment } from "./target.js";
+import Target, { OutgoingPayment, RetryOnNextError } from "./target.js";
 
 export default class LNURLPTarget extends Target {
   type = "lnurlp";
@@ -50,8 +46,8 @@ export default class LNURLPTarget extends Target {
     const metadata = await getLNURLPMetadata(this.lnurlp);
     return metadata.maxSendable ?? satsToMsats(500000); // 500,000 sats
   }
-  getAverageFee() {
-    return averageFee(this.lnurlp);
+  getEstimatedFee() {
+    return estimatedFee(this.lnurlp);
   }
   async getInvoice(amount: number, comment?: string, identifier?: string) {
     // TODO: send identifier along to lnurlp endpoint
@@ -64,21 +60,15 @@ export default class LNURLPTarget extends Target {
 
   async payPending(payout: OutgoingPayment) {
     // payout amount - estimated fees and round to the nearest sat (since most LN nodes don't support msats)
-    const estFee = this.getAverageFee() ?? 1000;
+    const estFee = this.getEstimatedFee();
     const amount = roundToSats(payout.amount - estFee);
 
-    const payRequest = await this.getInvoice(
-      amount,
-      payout.comment,
-      payout.identifier
-    );
+    this.log(`Sending ${msatsToSats(amount)} sats (fee: ${msatsToSats(estFee, true)})`);
+
+    const payRequest = await this.getInvoice(amount, payout.comment, payout.identifier);
     const { fee } = await lightning.payInvoice(payRequest);
 
-    this.log(
-      `Paid ${this.address || this.lnurlp} ${msatsToSats(amount)} sats ( fee: ${
-        fee / 1000
-      }, est fee: ${estFee / 1000} )`
-    );
+    this.log(`Sent ${msatsToSats(amount)} sats with fee: ${msatsToSats(fee, true)}`);
 
     recordFee(this.lnurlp, fee);
   }

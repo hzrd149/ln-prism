@@ -8,18 +8,16 @@
     </div>
     <div style="flex: 1">
       <label for="domain">Domain</label>
-      <input
-        type="text"
-        id="domain"
-        name="domain"
-        required
-        value="<%- hostname %>"
-      />
+      <input type="text" id="domain" name="domain" required value="<%- hostname %>" />
     </div>
   </div>
   <div>
-    <input type="checkbox" id="enableNostr" name="enableNostr" checked />
-    <label class="label-inline" for="enableNostr">Enable nostr Zaps</label>
+    <input type="checkbox" id="enableNostrZaps" name="enableNostrZaps" checked />
+    <label class="label-inline" for="enableNostrZaps">Enable nostr Zaps</label>
+  </div>
+  <div>
+    <input type="checkbox" id="enableNostrProfile" name="enableNostrProfile" />
+    <label class="label-inline" for="enableNostrProfile">Enable nostr Profile</label>
   </div>
   <button class="button button-outline">Add</button>
 </form>

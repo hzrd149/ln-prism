@@ -33,8 +33,4 @@ adminRouter.get("/", async (ctx) => {
 });
 
 adminRouter.use(createSplitRouter.routes(), createSplitRouter.allowedMethods());
-adminRouter.use(
-  "/split/:splitId",
-  adminSplitRouter.routes(),
-  adminSplitRouter.allowedMethods()
-);
+adminRouter.use("/split/:splitId", adminSplitRouter.routes(), adminSplitRouter.allowedMethods());

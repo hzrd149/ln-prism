@@ -1,0 +1,37 @@
+<label for="weight">Percent</label>
+<div class="h-stack">
+  <input
+    type="number"
+    name="weight"
+    id="weight"
+    min="1"
+    max="100"
+    step="1"
+    placeholder="weight"
+    required
+    style="width: 10rem"
+    value="<%- value %>"
+  />
+  <input
+    type="range"
+    id="percent-slider"
+    min="1"
+    max="100"
+    step="1"
+    placeholder="weight"
+    required
+    style="width: 100%"
+    value="<%- value %>"
+  />
+</div>
+
+<script type="text/javascript">
+  const percentInput = document.getElementById("weight");
+  const percentSlider = document.getElementById("percent-slider");
+  percentSlider.addEventListener("input", (e) => {
+    percentInput.value = e.target.value;
+  });
+  percentInput.addEventListener("change", (e) => {
+    percentSlider.value = e.target.value;
+  });
+</script>

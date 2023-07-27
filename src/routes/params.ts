@@ -29,8 +29,7 @@ export function setupParams(router: Router) {
   router.param<{ splitName: string }>("splitName", async (name, ctx, next) => {
     const split = getSplitByName(name, ctx.hostname);
 
-    if (!split)
-      throw new NotFountError(name + "@" + ctx.hostname + " dose not exist");
+    if (!split) throw new NotFountError(name + "@" + ctx.hostname + " dose not exist");
 
     ctx.state.split = split;
 

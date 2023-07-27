@@ -23,12 +23,13 @@ splitRouter.get<StateWithSplit>("/split/:splitName/invoice", async (ctx) => {
   const split = ctx.state.split;
 
   const amount = parseInt(ctx.query.amount as string);
+  const comment = ctx.query.comment as string;
   if (!amount) throw new BadRequestError("missing amount");
 
-  const { paymentRequest, paymentHash } = await split.createInvoice(
-    satsToMsats(amount),
-    { description: "manual" }
-  );
+  const { paymentRequest, paymentHash } = await split.createInvoice(satsToMsats(amount), {
+    description: "manual",
+    lnurlComment: comment ?? "",
+  });
 
   await ctx.render("split/invoice", {
     invoice: paymentRequest,

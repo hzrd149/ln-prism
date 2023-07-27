@@ -1,0 +1,28 @@
+<h2><%- target.displayName %></h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Amount</th>
+      <th>Identity</th>
+      <th>Comment</th>
+      <th>Status</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% for( let payout of target.outgoingPending ) { %>
+    <tr>
+      <td><%- msatsToSats(payout.amount, true) %> sats</td>
+      <td><%- payout.identity %></td>
+      <td><pre style="margin: 0"><%- payout.comment %></pre></td>
+      <td><%- payout.status %></td>
+    </tr>
+    <% if (payout.failed) { %>
+    <tr>
+      <td colspan="4">
+        <pre style="margin: 0"><%- payout.failed %></pre>
+      </td>
+    </tr>
+    <% } %> <% } %>
+  </tbody>
+</table>

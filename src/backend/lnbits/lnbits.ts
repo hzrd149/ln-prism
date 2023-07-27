@@ -38,18 +38,10 @@ export default class LNBitsBackend implements LightningBackend {
   async setup() {
     const result = await this.request("/api/v1/wallet");
 
-    this.log(
-      `Connected to wallet "${result.name}" with ${msatsToSats(
-        result.balance
-      )} sats`
-    );
+    this.log(`Connected to wallet "${result.name}" with ${msatsToSats(result.balance)} sats`);
   }
 
-  async createInvoice(
-    amount: number,
-    description: string = "",
-    webhook?: string
-  ) {
+  async createInvoice(amount: number, description: string = "", webhook?: string) {
     const hash = createHash("sha256");
     hash.update(description);
 
@@ -88,9 +80,7 @@ export default class LNBitsBackend implements LightningBackend {
       headers: { "content-type": "application/json" },
     });
 
-    const paymentDetails = await this.request(
-      `/api/v1/payments/${result.payment_hash}`
-    );
+    const paymentDetails = await this.request(`/api/v1/payments/${result.payment_hash}`);
 
     return {
       paymentHash: result.payment_hash as string,

@@ -1,8 +1,7 @@
 <h1><%- split.address %></h1>
 
-<% if (split.targets.length > 1) { %> <%- include('../components/split-chart', {
-split }) %> <% } %> <%- include('../components/split-simple-table', { split })
-%>
+<% if (split.targets.length > 1) { %> <%- include('../components/split-chart', { split }) %> <% } %> <%-
+include('../components/split-simple-table', { split, showFee: true }) %>
 
 <div class="h-stack flex-wrap">
   <div style="flex: 1 0">
@@ -13,7 +12,7 @@ split }) %> <% } %> <%- include('../components/split-simple-table', { split })
     <h3>LN Address</h3>
     <%- include('../components/split-ln-address-qr', { split }) %>
   </div>
-  <% if (split.enableNostr) { %>
+  <% if (split.enableNostrProfile) { %>
   <div style="flex: 1 0">
     <h3>Nostr</h3>
     <%- include('../components/split-nostr-qr', { split }) %>
@@ -33,12 +32,7 @@ split }) %> <% } %> <%- include('../components/split-simple-table', { split })
     required
     value="<%- minSendable+5 %>"
   />
-  <textarea
-    type="text"
-    name="comment"
-    maxlength="200"
-    placeholder="Comment"
-  ></textarea>
+  <textarea type="text" name="comment" maxlength="200" placeholder="Comment"></textarea>
   <button class="button mb-0">Create invoice</button>
 </form>
 
@@ -58,7 +52,7 @@ split }) %> <% } %> <%- include('../components/split-simple-table', { split })
       <td>LNURL</td>
       <td><code><%- split.lnurlp %></code></td>
     </tr>
-    <% if (split.enableNostr) { %>
+    <% if (split.enableNostrProfile) { %>
     <tr>
       <td>Nostr</td>
       <td><code><%- split.nprofile %></code></td>

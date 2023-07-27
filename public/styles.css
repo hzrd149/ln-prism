@@ -82,3 +82,9 @@ h1 {
 .button-outline.button-red {
   color: #d54e4e;
 }
+
+.button-icon {
+  padding: calc((3.8rem - 2rem) / 2);
+  font-size: 1.6rem;
+  line-height: 1.6rem;
+}

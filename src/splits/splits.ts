@@ -10,11 +10,7 @@ export function getSplits() {
   return Array.from(splits);
 }
 
-export async function createSplit(
-  name: string,
-  domain: string,
-  privateKey?: string
-) {
+export async function createSplit(name: string, domain: string, privateKey?: string) {
   const split = new Split(name, domain, privateKey);
 
   if (getSplitByName(name, domain)) {

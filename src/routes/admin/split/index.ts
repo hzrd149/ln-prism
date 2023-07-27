@@ -11,37 +11,19 @@ adminSplitRouter.get<StateWithSplit>("/", (ctx) => {
 
   ctx.state.ogTitle = split.address;
 
-  return ctx.render("admin/split/index", {
-    totalWeight: split.targets.reduce((v, p) => v + p.weight, 0),
-    failedPayouts: Array.from(split.targets.map((t) => t.pending))
-      .flat()
-      .filter((p) => p.failed),
-  });
+  return ctx.render("admin/split/index");
 });
-
-adminSplitRouter.post<StateWithSplit>("/retry-failed", async (ctx) => {
+adminSplitRouter.get<StateWithSplit>("/pending", (ctx) => {
   const split = ctx.state.split;
-
-  for (const target of split.targets) {
-    for (const pending of target.pending) {
-      delete pending.failed;
-    }
-  }
-
-  await ctx.redirect(`/admin/split/${split.id}`);
+  ctx.state.ogTitle = "Pending - " + split.address;
+  return ctx.render("admin/split/pending");
+});
+adminSplitRouter.get<StateWithSplit>("/history", (ctx) => {
+  const split = ctx.state.split;
+  ctx.state.ogTitle = "History - " + split.address;
+  return ctx.render("admin/split/history");
 });
 
-adminSplitRouter.use(
-  "/delete",
-  deleteSplitRouter.routes(),
-  deleteSplitRouter.allowedMethods()
-);
-adminSplitRouter.use(
-  "/edit",
-  editSplitRouter.routes(),
-  editSplitRouter.allowedMethods()
-);
-adminSplitRouter.use(
-  splitTargetRouter.routes(),
-  splitTargetRouter.allowedMethods()
-);
+adminSplitRouter.use("/delete", deleteSplitRouter.routes(), deleteSplitRouter.allowedMethods());
+adminSplitRouter.use("/edit", editSplitRouter.routes(), editSplitRouter.allowedMethods());
+adminSplitRouter.use(splitTargetRouter.routes(), splitTargetRouter.allowedMethods());

@@ -37,8 +37,7 @@ function formatSplit(split: Split) {
 // create
 apiRouter.post("/split", async (ctx) => {
   const apiKey = ctx.request.headers["x-api-key"];
-  if (apiKey !== db.data.rootApiKey)
-    throw new UnauthorizedError("invalid x-api-key");
+  if (apiKey !== db.data.rootApiKey) throw new UnauthorizedError("invalid x-api-key");
 
   const split = await createSplit(
     ctx.request.body.name,
@@ -58,8 +57,7 @@ apiRouter.get<StateWithSplit>("/split/:splitId", (ctx) => {
 apiRouter.delete<StateWithSplit>("/split/:splitId", async (ctx) => {
   const split = ctx.state.split;
   const apiKey = ctx.request.headers["x-api-key"];
-  if (apiKey !== split.apiKey && apiKey !== db.data.rootApiKey)
-    throw new UnauthorizedError("x-api-key did not match");
+  if (apiKey !== split.apiKey && apiKey !== db.data.rootApiKey) throw new UnauthorizedError("x-api-key did not match");
 
   await removeSplit(split.id);
 
@@ -73,8 +71,7 @@ apiRouter.delete<StateWithSplit>("/split/:splitId", async (ctx) => {
 apiRouter.patch<StateWithSplit>("/split/:splitId", async (ctx) => {
   const split = ctx.state.split;
   const apiKey = ctx.request.headers["x-api-key"];
-  if (apiKey !== split.apiKey && apiKey !== db.data.rootApiKey)
-    throw new UnauthorizedError("x-api-key did not match");
+  if (apiKey !== split.apiKey && apiKey !== db.data.rootApiKey) throw new UnauthorizedError("x-api-key did not match");
 
   if (ctx.request.body.targets) {
     const targets = ctx.request.body.targets as {

@@ -1,6 +1,16 @@
 import { nanoid } from "nanoid";
 import { appDebug } from "../../debug.js";
 import type { Split } from "../split.js";
+import { satsToMsats } from "../../helpers/sats.js";
+import dayjs from "dayjs";
+import { db } from "../../db.js";
+
+export class RetryOnNextError extends Error {
+  retryOnNextPayment = true;
+  constructor(msg) {
+    super(msg);
+  }
+}
 
 export type TargetJSON = {
   id: string;
@@ -9,11 +19,23 @@ export type TargetJSON = {
   weight: number;
   fixed: boolean;
   forwardComment: boolean;
-  pending: OutgoingPayment[];
+  payoutThreshold: number;
 };
 
+export enum OutgoingPaymentStatus {
+  Pending = "pending",
+  Paying = "paying",
+  Failed = "failed",
+  Complete = "complete",
+}
+
 export type OutgoingPayment = {
-  /** amount in msat */
+  id: string;
+  /** the target this was created for */
+  target: string;
+  /** current status */
+  status: OutgoingPaymentStatus;
+  /** amount in msats */
   amount: number;
   /** lnurl comment or zapRequest.content */
   comment?: string;
@@ -31,15 +53,58 @@ export default class Target {
   weight: number;
   fixed = false;
   forwardComment = true;
+  payoutThreshold = 90;
 
   log = appDebug.extend("target");
-  pending: OutgoingPayment[] = [];
 
+  private retryOnNextPayout = false;
+  private retries = 0;
+  private retryTimestamp = dayjs().unix();
+
+  constructor(id = nanoid()) {
+    this.id = id;
+  }
+
+  // Override methods
   get displayName() {
     return "Target";
   }
   get link() {
     return "about:blank";
+  }
+  async setInput(input: string) {
+    throw new Error("Not implemented");
+  }
+  async getMinSendable(): Promise<number> {
+    throw new Error("Not implemented");
+  }
+  async getMaxSendable(): Promise<number> {
+    throw new Error("Not implemented");
+  }
+  async getInvoice(amount: number, comment?: string, identifier?: string): Promise<string> {
+    throw new Error("Not implemented");
+  }
+  getEstimatedFee(): number {
+    throw new Error("Not implemented");
+  }
+  async payPending(pending: OutgoingPayment) {
+    throw new Error("Not implemented");
+  }
+
+  get outgoing() {
+    return db.data.outgoing.filter((out) => out.target === this.id);
+  }
+  get outgoingPending() {
+    return db.data.outgoing.filter(
+      (out) =>
+        out.target === this.id &&
+        (out.status === OutgoingPaymentStatus.Pending ||
+          out.status === OutgoingPaymentStatus.Paying ||
+          out.status === OutgoingPaymentStatus.Failed)
+    );
+  }
+  get outgoingComplete() {
+    return db.data.outgoing.filter((out) => out.target === this.id && out.status === OutgoingPaymentStatus.Complete);
   }
 
   private _parentSplit: Split;
@@ -51,58 +116,104 @@ export default class Target {
     this.log = split.log.extend(this.displayName);
   }
 
-  constructor(id = nanoid()) {
-    this.id = id;
-  }
-
-  async setInput(input: string) {
-    throw new Error("Not implemented");
-  }
-  async getMinSendable(): Promise<number> {
-    throw new Error("Not implemented");
-  }
-  async getMaxSendable(): Promise<number> {
-    throw new Error("Not implemented");
-  }
-  async getInvoice(
-    amount: number,
-    comment?: string,
-    identifier?: string
-  ): Promise<string> {
-    throw new Error("Not implemented");
-  }
-  getAverageFee(): number | undefined {
-    throw new Error("Not implemented");
+  getPayout(id: string): OutgoingPayment | undefined {
+    return db.data.outgoing.find((out) => out.id === id && out.target === this.id);
   }
   addPayout(amount: number, comment?: string, identifier?: string) {
-    this.pending.push({ amount, comment, identifier });
+    const payout: OutgoingPayment = {
+      id: nanoid(),
+      target: this.id,
+      status: OutgoingPaymentStatus.Pending,
+      amount,
+      comment,
+      identifier,
+    };
+    db.data.outgoing.push(payout);
+
+    if (this.retryOnNextPayout) {
+      this.retryTimestamp = dayjs().unix();
+    }
+
+    return payout;
   }
 
-  async payPending(pending: OutgoingPayment) {
-    throw new Error("Not implemented");
-  }
   async payNext() {
-    const payout = this.pending.find((p) => !p.failed);
-    if (!payout) return;
+    const payouts = this.outgoing;
+    if (payouts.length === 0) return;
+    if (this.retryTimestamp > dayjs().unix()) return;
 
-    // remove the payout from the array
-    const idx = this.pending.indexOf(payout);
-    if (idx > -1) this.pending.splice(idx, 1);
+    const MAX_COMMENT_LENGTH = 250;
+    const MAX_SENDABLE = satsToMsats(10000);
 
-    try {
-      await this.payPending(payout);
-    } catch (e) {
-      // log error
-      if (e instanceof Error) {
-        this.log("Failed:" + e.message);
-        payout.failed = e.message;
-      } else {
-        this.log(e);
-        payout.failed = "unknown";
+    let batchedAmount = 0;
+    let batchedComment = "";
+
+    const batched: OutgoingPayment[] = [];
+    while (true) {
+      const payout = payouts.shift();
+      if (!payout) break;
+
+      // skip this payout if its complete or being paid
+      if (payout.status === OutgoingPaymentStatus.Complete || payout.status === OutgoingPaymentStatus.Paying) continue;
+
+      // stop baching if this amount puts the total over max
+      if (batchedAmount + payout.amount > MAX_SENDABLE) break;
+
+      if (this.forwardComment && payout.comment) {
+        let comment = payout.comment;
+        if (payout.identifier) {
+          comment = `${payout.identifier}: ${payout.comment}`;
+        }
+
+        // stop batching if the comment gets too long
+        if (batchedComment.length + comment.length > MAX_COMMENT_LENGTH) break;
+
+        if (!batchedComment) batchedComment = comment;
+        else batchedComment += comment;
       }
 
-      // add the payout back into the array
-      this.pending.push(payout);
+      batchedAmount += payout.amount;
+
+      payout.status = OutgoingPaymentStatus.Paying;
+      batched.push(payout);
+    }
+
+    if (batched.length === 0) return;
+
+    try {
+      const payout = {
+        id: nanoid(),
+        target: this.id,
+        status: OutgoingPaymentStatus.Pending,
+        amount: batchedAmount,
+        comment: batchedComment,
+      };
+
+      const fee = this.getEstimatedFee();
+      if ((1 - fee / payout.amount) * 100 < this.payoutThreshold)
+        throw new RetryOnNextError("Fee to amount radio below threshold");
+
+      await this.payPending(payout);
+
+      for (const payout of batched) {
+        payout.status = OutgoingPaymentStatus.Complete;
+        delete payout.failed;
+      }
+    } catch (e) {
+      this.log("Failed to batch:", e.message);
+
+      for (const payout of batched) {
+        payout.status = OutgoingPaymentStatus.Failed;
+        payout.failed = e.message;
+      }
+
+      this.retries = (this.retries || 0) + 1;
+      if (e instanceof RetryOnNextError) {
+        this.retryOnNextPayout = true;
+        this.retryTimestamp = dayjs().add(1, "year").unix();
+      } else {
+        this.retryTimestamp = dayjs().add(this.retries, "minutes").unix();
+      }
     }
   }
 
@@ -114,7 +225,7 @@ export default class Target {
       weight: this.weight,
       fixed: this.fixed,
       forwardComment: this.forwardComment,
-      pending: this.pending,
+      payoutThreshold: this.payoutThreshold,
     };
   }
 }

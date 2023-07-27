@@ -1,9 +1,6 @@
 <h1><%- split.address %></h1>
 
-<form
-  action="/admin/split/<%- split.id %>/remove/<%- target.id %>"
-  method="post"
->
+<form action="<%- path %>" method="post">
   <div class="card" style="max-width: 6in">
     <div class="card-header">Remove <%- target.address %>?</div>
     <div class="card-body">

@@ -9,7 +9,7 @@
     </div>
     <div class="card-body">
       <%- include("../components/split-chart", { split }) %> <%-
-      include("../components/split-simple-table", { split }) %>
+      include("../components/split-simple-table", { split, showFee: false }) %>
     </div>
     <div class="card-footer h-stack">
       <a class="button button-outline" href="/admin/split/<%- split.id %>"

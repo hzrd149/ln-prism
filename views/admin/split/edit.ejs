@@ -4,29 +4,21 @@
   <div class="h-stack">
     <div style="flex: 1">
       <label for="name">Name</label>
-      <input
-        type="text"
-        id="name"
-        name="name"
-        required
-        value="<%- split.name %>"
-      />
+      <input type="text" id="name" name="name" required value="<%- split.name %>" />
     </div>
     <div style="flex: 1">
       <label for="domain">Domain</label>
-      <input
-        type="text"
-        id="domain"
-        name="domain"
-        required
-        value="<%- split.domain %>"
-      />
+      <input type="text" id="domain" name="domain" required value="<%- split.domain %>" />
     </div>
   </div>
   <div>
-    <input <%- split.enableNostr?'checked':'' %> type="checkbox"
-    id="enableNostr" name="enableNostr" />
-    <label class="label-inline" for="enableNostr">Enable nostr Zaps</label>
+    <input <%- split.enableNostrZaps?'checked':'' %> type="checkbox" id="enableNostrZaps" name="enableNostrZaps" />
+    <label class="label-inline" for="enableNostrZaps">Enable nostr Zaps</label>
+  </div>
+  <div>
+    <input <%- split.enableNostrProfile?'checked':'' %> type="checkbox" id="enableNostrProfile"
+    name="enableNostrProfile" />
+    <label class="label-inline" for="enableNostrProfile">Enable nostr Profile</label>
   </div>
   <button class="button button-outline">Save</button>
 </form>
