@@ -1,6 +1,7 @@
 import { Event, Filter, Relay, relayInit } from "nostr-tools";
 import WebSocket from "ws";
 import { appDebug } from "./debug.js";
+import { db } from "./db.js";
 // @ts-ignore
 global.WebSocket = WebSocket;
 
@@ -57,4 +58,18 @@ export async function getSingleEvent(urls: string[], filter: Filter): Promise<Ev
       return relay.get(filter);
     })
   );
+}
+
+export async function getUserKind0(relays: string[], pubkey) {
+  const cached = db.data.nostrCache[pubkey];
+  if (cached) return cached;
+
+  const kind0 = await getSingleEvent(relays, {
+    authors: [pubkey],
+    kinds: [0],
+  });
+
+  db.data.nostrCache[pubkey] = kind0;
+
+  return kind0;
 }

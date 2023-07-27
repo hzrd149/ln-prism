@@ -1,5 +1,5 @@
 import { finishEvent, nip19, nip57 } from "nostr-tools";
-import { getSingleEvent } from "../../relays.js";
+import { getSingleEvent, getUserKind0 } from "../../relays.js";
 import { NOSTR_RELAYS } from "../../env.js";
 import { BadRequestError } from "../../helpers/errors.js";
 import { getInvoiceFromLNURL, getLNURLPMetadata, lnAddressToLNURLP } from "../../helpers/lnurl.js";
@@ -85,10 +85,7 @@ export default class NostrTarget extends Target {
         throw new BadRequestError(`Unknown NIP-19 type ${parsed.type}`);
     }
 
-    const kind0 = await getSingleEvent(NOSTR_RELAYS, {
-      authors: [pubkey],
-      kinds: [0],
-    });
+    const kind0 = await getUserKind0(NOSTR_RELAYS, pubkey);
 
     if (!kind0) throw new Error("Failed to find pubkey profile");
 

@@ -33,6 +33,8 @@ export function getSplitByName(name: string, domain: string) {
 }
 
 export async function loadSplits() {
+  log(`Loading splits from db`);
+
   for (const json of db.data.splits) {
     const split = await Split.fromJSON(json);
     splits.add(split);
