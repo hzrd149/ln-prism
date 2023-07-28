@@ -1,0 +1,16 @@
+<%- include('../../../components/target/breadcrumbs', { split, target, page: 'Delete' }) %>
+<%-include('../../../components/target/nav', { targetHref, path })%>
+
+<form action="<%- path %>" method="post">
+  <div class="card" style="max-width: 6in">
+    <div class="card-header">Delete <%- target.displayName %>?</div>
+    <div class="card-body">
+      Are you sure you want to remove <strong><%- target.displayName %></strong> from
+      <strong><%- split.address %></strong>
+    </div>
+    <div class="card-footer h-stack" style="flex-direction: row-reverse">
+      <button class="button button-red" type="submit">Delete</button>
+      <button class="button button-clear" onClick="history.back()">Cancel</button>
+    </div>
+  </div>
+</form>

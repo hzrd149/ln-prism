@@ -1,0 +1,71 @@
+<%- include('../../../components/target/breadcrumbs', { split, target, page: '' }) %>
+<%-include('../../../components/target/nav', { targetHref, path })%>
+
+<table style="white-space: nowrap">
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>LN Address</td>
+      <td><a href="lightning:<%- target.address %>"><%- target.address %></a></td>
+    </tr>
+    <tr>
+      <td>LNURLp</td>
+      <td>
+        <a href="lightning:<%- target.lnurlp %>"><%- target.lnurlp %></a>
+      </td>
+    </tr>
+    <% if (target.type === 'nostr') { %>
+    <tr>
+      <td>npub</td>
+      <td>
+        <a href="<%- target.link %>"><%- target.npub %></a>
+      </td>
+    </tr>
+    <% } %>
+  </tbody>
+</table>
+
+<a class="button button-red <%- path === targetHref+'/delete'?'':'button-outline' %>" href="<%- targetHref %>/delete">
+  Delete
+</a>
+
+<table>
+  <thead>
+    <tr>
+      <th>Date</th>
+      <th>Amount</th>
+      <th>Identity</th>
+      <th>Comment</th>
+      <th>Status</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% for( let payout of target.outgoingPending ) { %>
+    <tr>
+      <td><time></time></td>
+      <td><%- msatsToSats(payout.amount, true) %> sats</td>
+      <td><%- payout.identity %></td>
+      <td><pre style="margin: 0"><%- payout.comment %></pre></td>
+      <td><%- payout.status %></td>
+    </tr>
+    <% if (payout.failed) { %>
+    <tr>
+      <td colspan="4">
+        <pre style="margin: 0"><%- payout.failed %></pre>
+      </td>
+    </tr>
+    <% } %> <% } %>
+  </tbody>
+</table>
+
+<% if (target.type === 'nostr') { %>
+<details>
+  <summary>nostr Profile</summary>
+  <pre><code><%- JSON.stringify(target.profile, null, 2) %></code></pre>
+</details>
+<% } %>

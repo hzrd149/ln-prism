@@ -1,6 +1,7 @@
 <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
-<h1><%- split.address %></h1>
+<%- include('../../../components/target/breadcrumbs', { split, target, page: 'Edit' }) %>
+<%-include('../../../components/target/nav', { targetHref, path })%>
 
 <form action="<%- path %>" method="post">
   <% if (target.type === 'lnurlp') { %>
@@ -38,7 +39,8 @@
     <input <%- target.forwardComment?'checked':'' %> type="checkbox" id="forwardComment" name="forwardComment" />
     <label class="label-inline" for="forwardComment">Forward Comments</label>
   </div>
-  <button class="button button-outline mb-0">Save</button>
+  <button class="button mb-0" type="submit"">Save</button>
+  <button class="button button-outline mb-0" onClick="history.back()">Cancel</button>
 </form>
 
 <h3>Scanner</h3>

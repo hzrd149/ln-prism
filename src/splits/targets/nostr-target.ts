@@ -1,9 +1,9 @@
 import { finishEvent, nip19, nip57 } from "nostr-tools";
-import { getSingleEvent, getUserKind0 } from "../../relays.js";
+import { getUserKind0 } from "../../relays.js";
 import { NOSTR_RELAYS } from "../../env.js";
 import { BadRequestError } from "../../helpers/errors.js";
 import { getInvoiceFromLNURL, getLNURLPMetadata, lnAddressToLNURLP } from "../../helpers/lnurl.js";
-import Target, { OutgoingPayment, RetryOnNextError } from "./target.js";
+import Target, { OutgoingPayment } from "./target.js";
 import { msatsToSats, roundToSats, satsToMsats } from "../../helpers/sats.js";
 import { lightning } from "../../backend/index.js";
 import { estimatedFee, recordFee } from "../../fees.js";
@@ -26,7 +26,7 @@ export default class NostrTarget extends Target {
     return this.profile.name || this.profile.displayName || this.address || this.lnurlp || this.pubkey;
   }
   get link() {
-    return `nostr:${nip19.npubEncode(this.pubkey)}`;
+    return `nostr:${this.npub}`;
   }
   get lnurlp() {
     if (!this.profile) throw new Error("No loaded yet");
@@ -34,6 +34,9 @@ export default class NostrTarget extends Target {
   }
   get address() {
     return this.profile?.lud16;
+  }
+  get npub(){
+    return nip19.npubEncode(this.pubkey)
   }
 
   async getMinSendable() {

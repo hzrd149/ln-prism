@@ -1,0 +1,18 @@
+<% if (target.type === 'nostr' && target.profile && target.profile.picture) { %>
+<div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem">
+  <img src="<%- target.profile.picture %>" style="width: 4rem; height: 4rem; object-fit: cover; border-radius: 50%" />
+  <div>
+    <h3 style="margin: 0"><%- target.profile.display_name || target.profile.name %></h3>
+    <small><%- target.profile.nip05 %></small>
+  </div>
+  <a href="https://nostrapp.link/?#<%- target.link.replace('nostr:', '') %>" target="_blank">
+    <img src="/nostr-icon.png" style="width: 3rem" />
+  </a>
+</div>
+<% } %>
+
+<a class="button <%- path === targetHref?'':'button-outline' %>" href="<%- targetHref %>">Details</a>
+<a class="button <%- path === targetHref+'/edit'?'':'button-outline' %>" href="<%- targetHref %>/edit">Edit</a>
+<a class="button <%- path === targetHref+'/history'?'':'button-outline' %>" href="<%- targetHref %>/history">
+  History
+</a>

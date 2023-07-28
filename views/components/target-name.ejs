@@ -1,11 +1,6 @@
+<a href="/admin/split/<%- split.id %>/target/<%- target.id %>"><%- target.displayName %></a>
 <% if (target.type === 'nostr') { %>
-<a
-  href="https://nostrapp.link/?#<%- target.link.replace('nostr:', '') %>"
-  target="_blank"
->
+<a href="https://nostrapp.link/?#<%- target.link.replace('nostr:', '') %>" target="_blank">
   <img src="/nostr-icon.png" style="width: 2rem; vertical-align: middle" />
-  <%- target.displayName %>
 </a>
-<% } else if (target.type==='lnurlp') { %>
-<a href="<%- target.link %>"><%- target.displayName %></a>
 <% } %>
