@@ -11,5 +11,5 @@ deleteTargetRouter.post<StateWithTarget>("/", async (ctx) => {
   const { split, target } = ctx.state;
   split.removeTarget(target.id);
 
-  await ctx.redirect(ctx.state.stateHref);
+  await ctx.redirect(ctx.state.splitHref);
 });

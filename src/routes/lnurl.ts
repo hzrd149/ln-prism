@@ -29,7 +29,7 @@ lnurlRouter.get<StateWithSplit>(["/lnurlp/:splitName", "/.well-known/lnurlp/:spl
     minSendable: roundToSats(await split.getMinSendable()),
     maxSendable: roundToSats(await split.getMaxSendable()),
     metadata: JSON.stringify(metadata),
-    commentAllowed: 256,
+    commentAllowed: await split.getMaxComment(),
     tag: "payRequest",
   } as LNURLPayRequest;
 

@@ -23,9 +23,13 @@ export type TargetJSON = {
 };
 
 export enum OutgoingPaymentStatus {
+  /** Initial State */
   Pending = "pending",
+  /** Invoice is being sent */
   Paying = "paying",
+  /** Invoice failed to send */
   Failed = "failed",
+  /** Complete */
   Complete = "complete",
 }
 
@@ -79,6 +83,9 @@ export default class Target {
     throw new Error("Not implemented");
   }
   async getMaxSendable(): Promise<number> {
+    throw new Error("Not implemented");
+  }
+  async getMaxComment(): Promise<number | undefined> {
     throw new Error("Not implemented");
   }
   async getInvoice(amount: number, comment?: string, identifier?: string): Promise<string> {
@@ -142,8 +149,8 @@ export default class Target {
     if (payouts.length === 0) return;
     if (this.retryTimestamp > dayjs().unix()) return;
 
-    const MAX_COMMENT_LENGTH = 250;
-    const MAX_SENDABLE = satsToMsats(10000);
+    const MAX_COMMENT_LENGTH: number | undefined = await this.getMaxComment();
+    const MAX_SENDABLE = await this.getMaxSendable();
 
     let batchedAmount = 0;
     let batchedComment = "";
@@ -156,17 +163,24 @@ export default class Target {
       // skip this payout if its complete or being paid
       if (payout.status === OutgoingPaymentStatus.Complete || payout.status === OutgoingPaymentStatus.Paying) continue;
 
-      // stop baching if this amount puts the total over max
-      if (batchedAmount + payout.amount > MAX_SENDABLE) break;
+      if (batchedAmount + payout.amount > MAX_SENDABLE) {
+        // if this amount is greater than max sendable stop batching, or skip to the next payout
+        if (batched.length > 0) break;
+        else continue;
+      }
 
-      if (this.forwardComment && payout.comment) {
+      // if forwarding comments is enabled, the payout has a comment, and the lnurl accepts comments
+      if (this.forwardComment && payout.comment && MAX_COMMENT_LENGTH !== undefined) {
         let comment = payout.comment;
         if (payout.identifier) {
           comment = `${payout.identifier}: ${payout.comment}`;
         }
 
-        // stop batching if the comment gets too long
-        if (batchedComment.length + comment.length > MAX_COMMENT_LENGTH) break;
+        if (batchedComment.length + comment.length > MAX_COMMENT_LENGTH) {
+          // if comment gets too long stop batching or skip to the next payout
+          if (batched.length > 0) break;
+          else continue;
+        }
 
         if (!batchedComment) batchedComment = comment;
         else batchedComment += comment;

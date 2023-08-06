@@ -35,8 +35,8 @@ export default class NostrTarget extends Target {
   get address() {
     return this.profile?.lud16;
   }
-  get npub(){
-    return nip19.npubEncode(this.pubkey)
+  get npub() {
+    return nip19.npubEncode(this.pubkey);
   }
 
   async getMinSendable() {
@@ -46,6 +46,10 @@ export default class NostrTarget extends Target {
   async getMaxSendable() {
     const metadata = await getLNURLPMetadata(this.lnurlp);
     return metadata.maxSendable ?? satsToMsats(500000); // 500,000 sats
+  }
+  async getMaxComment(): Promise<number | undefined> {
+    const metadata = await getLNURLPMetadata(this.lnurlp);
+    return metadata.commentAllowed??undefined;
   }
   getEstimatedFee() {
     return estimatedFee(this.lnurlp);

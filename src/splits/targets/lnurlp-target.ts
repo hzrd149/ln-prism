@@ -1,9 +1,9 @@
 import { lightning } from "../../backend/index.js";
-import { averageFee, estimatedFee, recordFee } from "../../fees.js";
+import { estimatedFee, recordFee } from "../../fees.js";
 import { BadRequestError } from "../../helpers/errors.js";
 import { getInvoiceFromLNURL, getLNURLPMetadata, lnAddressToLNURLP } from "../../helpers/lnurl.js";
 import { msatsToSats, roundToSats, satsToMsats } from "../../helpers/sats.js";
-import Target, { OutgoingPayment, RetryOnNextError } from "./target.js";
+import Target, { OutgoingPayment } from "./target.js";
 
 export default class LNURLPTarget extends Target {
   type = "lnurlp";
@@ -45,6 +45,10 @@ export default class LNURLPTarget extends Target {
   async getMaxSendable() {
     const metadata = await getLNURLPMetadata(this.lnurlp);
     return metadata.maxSendable ?? satsToMsats(500000); // 500,000 sats
+  }
+  async getMaxComment(): Promise<number | undefined> {
+    const metadata = await getLNURLPMetadata(this.lnurlp);
+    return metadata.commentAllowed ?? undefined;
   }
   getEstimatedFee() {
     return estimatedFee(this.lnurlp);

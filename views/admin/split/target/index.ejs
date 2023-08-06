@@ -50,13 +50,13 @@
       <td><time></time></td>
       <td><%- msatsToSats(payout.amount, true) %> sats</td>
       <td><%- payout.identity %></td>
-      <td><pre style="margin: 0"><%- payout.comment %></pre></td>
+      <td><%- payout.comment %></td>
       <td><%- payout.status %></td>
     </tr>
     <% if (payout.failed) { %>
     <tr>
       <td colspan="4">
-        <pre style="margin: 0"><%- payout.failed %></pre>
+        <%- payout.failed %>
       </td>
     </tr>
     <% } %> <% } %>

@@ -12,9 +12,11 @@ export type CustomState = {
 };
 export type StateWithSplit = CustomState & {
   split: Split;
+  splitHref: string;
 };
 export type StateWithTarget = StateWithSplit & {
   target: Target;
+  targetHref: string;
 };
 
 export function setupParams(router: Router) {
@@ -43,7 +45,7 @@ export function setupParams(router: Router) {
 
     if (!split) throw new NotFountError(id + " dose not exist");
     ctx.state.split = split;
-    ctx.state.splitHref = `/admin/split/${ctx.state.split.id}`
+    ctx.state.splitHref = `/admin/split/${ctx.state.split.id}`;
 
     return next();
   });
@@ -53,7 +55,7 @@ export function setupParams(router: Router) {
 
     if (!target) throw new NotFountError(id + " dose not exist");
     ctx.state.target = target;
-    ctx.state.targetHref = `${ctx.state.splitHref}/target/${target.id}`
+    ctx.state.targetHref = `${ctx.state.splitHref}/target/${target.id}`;
 
     return next();
   });

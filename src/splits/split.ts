@@ -167,6 +167,22 @@ export class Split {
   async getMaxSendable() {
     return satsToMsats(500000); // 500,000 sats
   }
+  async getMaxComment(): Promise<number | undefined> {
+    const targetsMaxComments = await Promise.all(
+      this.targets.filter((t) => t.forwardComment).map((t) => t.getMaxComment())
+    );
+    this.log(targetsMaxComments);
+
+    let maxLength: number | undefined = undefined;
+    for (const length of targetsMaxComments) {
+      if (length !== undefined) {
+        // find the shortest max length
+        maxLength = Math.min(length, maxLength ?? 255);
+      }
+    }
+    this.log(maxLength);
+    return maxLength;
+  }
 
   getSplitPercentages() {
     const percentages: Record<string, number> = {};
