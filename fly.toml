@@ -3,7 +3,7 @@ app = "prism"
 primary_region = "mia"
 
 [env]
-  PORT = 3000
+  PORT = "3000"
   NOSTR_RELAYS = "wss://nostrue.com,wss://relay.damus.io,wss://nos.lol,wss://nostr.wine,wss://relay.n057r.club,wss://relay.snort.social"
 
 [mounts]
