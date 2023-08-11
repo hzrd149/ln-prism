@@ -1,13 +1,14 @@
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
-app = "prism"
+app = "chris-prism"
 primary_region = "mia"
 
 [env]
   PORT = "3000"
+  DEBUG = "prism:*"
   NOSTR_RELAYS = "wss://nostrue.com,wss://relay.damus.io,wss://nos.lol,wss://nostr.wine,wss://relay.n057r.club,wss://relay.snort.social"
 
 [mounts]
-  source = "prism_data_v2"
+  source = "chris_prism_data"
   destination = "/data"
 
 [http_service]
