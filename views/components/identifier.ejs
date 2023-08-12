@@ -1,0 +1,7 @@
+<% if (isPubkey.test(identifier)) { %>
+<a href="https://nostrapp.link/?#<%- npubEncode(identifier) %>" target="_blank">
+  <%- truncatePubkey(npubEncode(identifier)) %>
+</a>
+<% } else { %>
+<span><%- identifier %></span>
+<% } %>

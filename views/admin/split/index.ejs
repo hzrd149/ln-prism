@@ -9,7 +9,6 @@ splitHref, path})%> <% let percentages = split.getSplitPercentages() %>
       <th>Percent</th>
       <th>Fee</th>
       <th>Comments</th>
-      <th></th>
     </tr>
   </thead>
   <tbody>
@@ -21,14 +20,6 @@ splitHref, path})%> <% let percentages = split.getSplitPercentages() %>
       <td><%- include('../../components/target-percent', { target, percentages }) %></td>
       <td><%- msatsToSats(target.getEstimatedFee(), true) %></td>
       <td><%- target.forwardComment ? 'Yes' : 'No' %></td>
-      <td>
-        <a href="<%- splitHref %>/target/<%- target.id %>/edit" class="button button-outline button-icon mb-0">📝</a>
-        <a
-          href="<%- splitHref %>/target/<%- target.id %>/delete"
-          class="button button-outline button-icon button-red mb-0"
-          >🗑</a
-        >
-      </td>
     </tr>
     <% } %>
   </tbody>

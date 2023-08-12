@@ -39,7 +39,7 @@
     <tr>
       <th>Date</th>
       <th>Amount</th>
-      <th>Identity</th>
+      <th>Identifier</th>
       <th>Comment</th>
       <th>Status</th>
     </tr>
@@ -49,15 +49,13 @@
     <tr>
       <td><time></time></td>
       <td><%- msatsToSats(payout.amount, true) %> sats</td>
-      <td><%- payout.identity %></td>
+      <td><%-include('../../../components/identifier', { identifier: payout.identifier })%></td>
       <td><%- payout.comment %></td>
       <td><%- payout.status %></td>
     </tr>
     <% if (payout.failed) { %>
     <tr>
-      <td colspan="4">
-        <%- payout.failed %>
-      </td>
+      <td colspan="4"><%- payout.failed %></td>
     </tr>
     <% } %> <% } %>
   </tbody>

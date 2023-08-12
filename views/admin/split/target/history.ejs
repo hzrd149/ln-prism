@@ -5,7 +5,7 @@
   <thead>
     <tr>
       <th>Amount</th>
-      <th>Identity</th>
+      <th>Identifier</th>
       <th>Comment</th>
     </tr>
   </thead>
@@ -13,7 +13,7 @@
     <% for( let payout of target.outgoingComplete ) { %>
     <tr>
       <td><%- msatsToSats(payout.amount, true) %> sats</td>
-      <td><%- payout.identity %></td>
+      <td><%-include('../../../components/identifier', { identifier: payout.identifier })%></td>
       <td><%- payout.comment %></td>
     </tr>
     <% } %>
