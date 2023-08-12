@@ -1,7 +1,5 @@
-<abbr
-  title="<%- target.fixed ? `Fixed (${target.weight}%)` : `Floating (${target.weight}%)` %>"
->
-  <span><%- target.fixed ? '🔒':'' %></span>
-  <span> </span>
+<abbr title="<%- target.fixed ? `Fixed (${target.weight}%)` : `Floating (${target.weight}%)` %>">
   <span><%- (percentages[target.id]*100).toFixed(2) %>%</span>
+  <span> </span>
+  <span><%- target.fixed ? '🔒':'' %></span>
 </abbr>

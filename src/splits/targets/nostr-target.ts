@@ -7,6 +7,8 @@ import Target, { OutgoingPayment } from "./target.js";
 import { msatsToSats, roundToSats, satsToMsats } from "../../helpers/sats.js";
 import { lightning } from "../../backend/index.js";
 import { estimatedFee, recordFee } from "../../fees.js";
+import { db } from "../../db.js";
+import { isPubkey } from "../../helpers/regexp.js";
 
 export type ParsedKind0 = {
   name?: string;
@@ -39,6 +41,14 @@ export default class NostrTarget extends Target {
     return nip19.npubEncode(this.pubkey);
   }
 
+  private getZaperPrivateKey() {
+    // use the splits private key only if the nostr profile is enabled
+    return this.parentSplit.enableNostrProfile ? this.parentSplit.privateKey : db.data.privateKey;
+  }
+  private get canZap() {
+    return this.pubkey && this.parentSplit.enableNostrZaps && this.getZaperPrivateKey();
+  }
+
   async getMinSendable() {
     const metadata = await getLNURLPMetadata(this.lnurlp);
     return metadata?.minSendable ?? 0;
@@ -48,27 +58,31 @@ export default class NostrTarget extends Target {
     return metadata.maxSendable ?? satsToMsats(500000); // 500,000 sats
   }
   async getMaxComment(): Promise<number | undefined> {
-    const metadata = await getLNURLPMetadata(this.lnurlp);
-    return metadata.commentAllowed??undefined;
+    if (this.canZap) {
+      return 4096;
+    } else {
+      const metadata = await getLNURLPMetadata(this.lnurlp);
+      return metadata.commentAllowed ?? undefined;
+    }
   }
   getEstimatedFee() {
     return estimatedFee(this.lnurlp);
   }
   async getInvoice(amount: number, comment?: string, identifier?: string): Promise<string> {
-    const pubkey = identifier;
+    if (this.canZap) {
+      this.log(`Creating zap request to ${this.pubkey}`);
 
-    if (pubkey && this.parentSplit.enableNostrZaps && this.parentSplit.privateKey) {
-      this.log(`Creating zap request to ${pubkey}`);
+      const link = identifier && isPubkey.test(identifier) ? `nostr:${nip19.npubEncode(identifier)}` : identifier;
 
       const event = nip57.makeZapRequest({
-        profile: pubkey,
+        profile: this.pubkey,
         event: null,
         amount,
-        comment: `Zap from ${this.link} ${comment || ""}`.trim(),
+        comment: [link && `From ${link}`, comment].filter(Boolean).join(" ").trim(),
         relays: NOSTR_RELAYS,
       });
 
-      const zapRequest = finishEvent(event, this.parentSplit.privateKey);
+      const zapRequest = finishEvent(event, this.getZaperPrivateKey());
 
       return await getInvoiceFromLNURL(this.lnurlp, amount, {
         zapRequest: JSON.stringify(zapRequest),

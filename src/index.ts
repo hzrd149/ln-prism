@@ -10,6 +10,7 @@ import ejs from "@koa/ejs";
 import staticFolder from "koa-static";
 import mount from "koa-mount";
 import { koaBody } from "koa-body";
+import { nip19 } from "nostr-tools";
 
 import { publicRouter } from "./routes/public/index.js";
 import { adminRouter } from "./routes/admin/index.js";
@@ -22,6 +23,8 @@ import { PORT } from "./env.js";
 import { db } from "./db.js";
 import { getSplits, loadSplits, saveSplits } from "./splits/splits.js";
 import { msatsToSats, satsToMsats } from "./helpers/sats.js";
+import { isPubkey } from "./helpers/regexp.js";
+import { truncatePubkey } from "./helpers/nostr.js";
 
 const require = createRequire(import.meta.url);
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -33,6 +36,9 @@ const app = new Koa();
 app.use((ctx, next) => {
   ctx.state.satsToMsats = satsToMsats;
   ctx.state.msatsToSats = msatsToSats;
+  ctx.state.isPubkey = isPubkey;
+  ctx.state.truncatePubkey = truncatePubkey;
+  ctx.state.npubEncode = nip19.npubEncode;
   return next();
 });
 ejs(app, {

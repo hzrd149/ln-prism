@@ -1,9 +1,10 @@
 import { nanoid } from "nanoid";
 import { appDebug } from "../../debug.js";
 import type { Split } from "../split.js";
-import { satsToMsats } from "../../helpers/sats.js";
 import dayjs from "dayjs";
 import { db } from "../../db.js";
+import { isPubkey } from "../../helpers/regexp.js";
+import { nip19 } from "nostr-tools";
 
 export class RetryOnNextError extends Error {
   retryOnNextPayment = true;
@@ -145,7 +146,10 @@ export default class Target {
   }
 
   async payNext() {
-    const payouts = this.outgoing;
+    const payouts = this.outgoing.filter(
+      (out) => out.status === OutgoingPaymentStatus.Pending || out.status === OutgoingPaymentStatus.Failed
+    );
+
     if (payouts.length === 0) return;
     if (this.retryTimestamp > dayjs().unix()) return;
 
@@ -154,6 +158,8 @@ export default class Target {
 
     let batchedAmount = 0;
     let batchedComment = "";
+
+    this.log("Start batching payouts");
 
     const batched: OutgoingPayment[] = [];
     while (true) {
@@ -165,25 +171,31 @@ export default class Target {
 
       if (batchedAmount + payout.amount > MAX_SENDABLE) {
         // if this amount is greater than max sendable stop batching, or skip to the next payout
-        if (batched.length > 0) break;
-        else continue;
+        if (batched.length > 0) {
+          this.log("Reached max_sendable limit");
+          break;
+        } else continue;
       }
 
       // if forwarding comments is enabled, the payout has a comment, and the lnurl accepts comments
       if (this.forwardComment && payout.comment && MAX_COMMENT_LENGTH !== undefined) {
-        let comment = payout.comment;
-        if (payout.identifier) {
-          comment = `${payout.identifier}: ${payout.comment}`;
-        }
+        this.log("Adding comment to batch");
+        const link = isPubkey.test(payout.identifier)
+          ? `nostr:${nip19.npubEncode(payout.identifier)}`
+          : payout.identifier || "anon";
+
+        const comment = [link && `From ${link}`, payout.comment].filter(Boolean).join(" ").trim();
 
         if (batchedComment.length + comment.length > MAX_COMMENT_LENGTH) {
           // if comment gets too long stop batching or skip to the next payout
-          if (batched.length > 0) break;
-          else continue;
+          if (batched.length > 0) {
+            this.log("Reached max comment limit");
+            break;
+          } else continue;
         }
 
         if (!batchedComment) batchedComment = comment;
-        else batchedComment += comment;
+        else batchedComment += "\n" + comment;
       }
 
       batchedAmount += payout.amount;
@@ -192,7 +204,10 @@ export default class Target {
       batched.push(payout);
     }
 
-    if (batched.length === 0) return;
+    if (batched.length === 0) {
+      this.log("No payouts batched, aborting");
+      return;
+    }
 
     try {
       const payout = {
@@ -202,6 +217,8 @@ export default class Target {
         amount: batchedAmount,
         comment: batchedComment,
       };
+
+      this.log("Paying batch payout", payout);
 
       const fee = this.getEstimatedFee();
       if ((1 - fee / payout.amount) * 100 < this.payoutThreshold)

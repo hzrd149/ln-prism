@@ -5,7 +5,7 @@
   <thead>
     <tr>
       <th>ID</th>
-      <th>Identity</th>
+      <th>Identifier</th>
       <th>Comment</th>
       <th>Amount</th>
       <th>Status</th>
@@ -15,7 +15,7 @@
     <% for( let incoming of split.incomingComplete ) { %>
     <tr>
       <td><%- incoming.id %></td>
-      <td><%- incoming.identity %></td>
+      <td><%-include('../../components/identifier', { identifier: incoming.identifier })%></td>
       <td><%- incoming.comment %></td>
       <td><%- msatsToSats(incoming.amount, true) %> sats</td>
       <td><%- incoming.status %></td>

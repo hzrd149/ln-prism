@@ -171,7 +171,6 @@ export class Split {
     const targetsMaxComments = await Promise.all(
       this.targets.filter((t) => t.forwardComment).map((t) => t.getMaxComment())
     );
-    this.log(targetsMaxComments);
 
     let maxLength: number | undefined = undefined;
     for (const length of targetsMaxComments) {
@@ -180,7 +179,6 @@ export class Split {
         maxLength = Math.min(length, maxLength ?? 255);
       }
     }
-    this.log(maxLength);
     return maxLength;
   }
 
@@ -326,7 +324,7 @@ export class Split {
     incoming.status = IncomingPaymentStatus.Received;
 
     // publish zap receipt
-    if (incoming.zapRequest && this.privateKey) {
+    if (incoming.zapRequest && db.data.privateKey) {
       const parsed = JSON.parse(incoming.zapRequest) as Event;
       const [_, ...relays] = parsed.tags.find((t) => t[0] === "relays") ?? [];
 
@@ -336,7 +334,7 @@ export class Split {
         paidAt: new Date(),
       });
 
-      const signed = finishEvent(zap, this.privateKey);
+      const signed = finishEvent(zap, db.data.privateKey);
 
       try {
         await connect(relays);
