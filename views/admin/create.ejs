@@ -21,3 +21,15 @@
   </div>
   <button class="button button-outline">Add</button>
 </form>
+
+<h3>Details</h3>
+<details>
+  <summary>Enable nostr zaps</summary>
+  "Enable nostr zaps" will set <code>"allowsNostr": true</code> on the LNURL endpoint. This will allow anyone to send a
+  "zap" to the endpoint and have it show on nostr
+</details>
+<details>
+  <summary>Enable nostr profile</summary>
+  "Enable nostr profile" will generate a new nsec and npub for the split and publish a kind 0 (metadata) event to nostr
+  with the split details and lightning address
+</details>

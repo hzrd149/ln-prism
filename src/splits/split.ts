@@ -131,6 +131,7 @@ export class Split {
       name: this.address,
       lud16: this.address,
       about: targets,
+      website: `https://${this.domain}/split/${this.name}`,
     };
 
     const kind0 = finishEvent(
