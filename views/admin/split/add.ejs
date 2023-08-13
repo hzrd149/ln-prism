@@ -9,7 +9,7 @@
     <option value="lnurlp">LNURLp</option>
     <option value="nostr">npub</option>
   </select>
-  <label for="input">Target Address or npub</label>
+  <label for="input">Lightning Address or npub</label>
   <input placeholder="user@domain.com, npub1..." id="input" name="input" style="flex: 2; min-width: 2in" required />
   <div class="h-stack">
     <div style="flex: 3"><%- include('../../components/target-percent-inputs', { value: 10 }) %></div>
@@ -34,8 +34,9 @@
   </div>
   <div>
     <input type="checkbox" id="forwardComment" name="forwardComment" checked />
-    <label class="label-inline" for="forwardComment">Forward Comments</label>
+    <label class="label-inline" for="forwardComment">Forward comments</label>
   </div>
+
   <button class="button mb-0" type="submit">Add</button>
   <button class="button button-outline mb-0" onClick="history.back()">Cancel</button>
 </form>
@@ -51,3 +52,22 @@
     document.querySelector("input[name=input]").value = decodedText;
   });
 </script>
+
+<h3>Details</h3>
+<details>
+  <summary>Forward comments</summary>
+  If this is enabled, any comments along with any identity information (ln address or npub) will be passed on to the
+  target
+</details>
+<details>
+  <summary>Fixed</summary>
+  Enabled - This target will get a fixed percent of the total payment
+  <br />
+  Disabled - This target will get X percent of the remaining amount
+</details>
+<details>
+  <summary>Threshold</summary>
+  The amount to fee ratio must be greater than X before the payment is sent (<code
+    >100 - (fee / amount) * 100 >= Threshold</code
+  >). This is used to prevent the fee taking up the majority of the payout
+</details>
