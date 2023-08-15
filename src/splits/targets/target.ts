@@ -205,6 +205,8 @@ export default class Target {
     }
 
     if (batched.length === 0) {
+      this.retryOnNextPayout = true;
+      this.retryTimestamp = dayjs().add(1, "year").unix();
       this.log("No payouts batched, aborting");
       return;
     }
