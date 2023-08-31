@@ -1,4 +1,4 @@
-<% if (split.targets.length > 0) { %><% let percentages = split.getSplitPercentages() %>
+<% if (split.activeTargets.length > 0) { %><% let percentages = split.getSplitPercentages() %>
 <table>
   <thead>
     <tr>
@@ -10,7 +10,7 @@
     </tr>
   </thead>
   <tbody>
-    <% split.targets.forEach((target) => { %>
+    <% split.activeTargets.forEach((target) => { %>
     <tr>
       <td><%- include("./target-name", { target }) %></td>
       <td><%- (percentages[target.id]*100).toFixed(2) %>%</td>

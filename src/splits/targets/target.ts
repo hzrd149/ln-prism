@@ -16,6 +16,7 @@ export class RetryOnNextError extends Error {
 export type TargetJSON = {
   id: string;
   type: string;
+  enabled: boolean;
   input: string;
   weight: number;
   fixed: boolean;
@@ -55,6 +56,7 @@ export default class Target {
   type = "null";
   input: string;
 
+  enabled: boolean = true;
   weight: number;
   fixed = false;
   forwardComment = true;
@@ -146,6 +148,7 @@ export default class Target {
   }
 
   async payNext() {
+    if (!this.enabled) return;
     const payouts = this.outgoing.filter(
       (out) => out.status === OutgoingPaymentStatus.Pending || out.status === OutgoingPaymentStatus.Failed
     );
@@ -205,6 +208,8 @@ export default class Target {
     }
 
     if (batched.length === 0) {
+      this.retryOnNextPayout = true;
+      this.retryTimestamp = dayjs().add(1, "year").unix();
       this.log("No payouts batched, aborting");
       return;
     }
@@ -252,6 +257,7 @@ export default class Target {
     return {
       id: this.id,
       type: this.type,
+      enabled: this.enabled,
       input: this.input,
       weight: this.weight,
       fixed: this.fixed,

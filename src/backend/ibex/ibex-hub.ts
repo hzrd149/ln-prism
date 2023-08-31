@@ -97,10 +97,11 @@ export class IBEXHubBackend implements LightningBackend {
 
   private async resetAccessToken() {
     this.auth.accessToken = null;
+    this.auth.accessTokenExpiresAt = null;
   }
   private async refreshAccessToken() {
     // refresh token expired or login again
-    if (!this.auth.refreshToken) {
+    if (!this.refreshToken) {
       if (!this.auth.email || !this.auth.password) throw new Error("Missing email and password");
 
       const { accessToken, accessTokenExpiresAt, refreshToken, refreshTokenExpiresAt } = await this.request(
@@ -131,7 +132,7 @@ export class IBEXHubBackend implements LightningBackend {
     }
 
     // accessToken missing or expired
-    if (!this.auth.accessToken) {
+    if (!this.accessToken) {
       const result = await this.request("/auth/refresh-access-token", {
         method: "POST",
         body: JSON.stringify({ refreshToken: this.auth.refreshToken }),
@@ -142,7 +143,7 @@ export class IBEXHubBackend implements LightningBackend {
       this.auth.accessTokenExpiresAt = result.expiresAt;
     }
 
-    return this.auth.accessToken;
+    return this.accessToken;
   }
 
   async createInvoice(amount: number, description?: string, webhook?: string) {

@@ -11,7 +11,6 @@ splitRouter.get<StateWithSplit>("/split/:splitName", async (ctx) => {
   const split = ctx.state.split;
 
   await ctx.render("split/index", {
-    totalWeight: split.targets.reduce((v, p) => v + p.weight, 0),
     ogTitle: ctx.state.splitAddress,
     ogImage: `https://${split.domain}/split/${split.id}/address.png`,
     minSendable: msatsToSats(await split.getMinSendable()),

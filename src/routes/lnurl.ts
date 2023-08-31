@@ -15,7 +15,7 @@ export function buildLNURLpMetadata(split: Split): LNURLPayMetadata {
     ["text/plain", split.address],
     [
       "text/long-desc",
-      split.targets.map((t) => `${t.displayName}: ${(percentages[t.id] * 100).toFixed(2)}%`).join("\n"),
+      split.activeTargets.map((t) => `${t.displayName}: ${(percentages[t.id] * 100).toFixed(2)}%`).join("\n"),
     ],
   ];
 }

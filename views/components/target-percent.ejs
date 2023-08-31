@@ -1,5 +1,9 @@
 <abbr title="<%- target.fixed ? `Fixed (${target.weight}%)` : `Floating (${target.weight}%)` %>">
+  <% if (target.enabled) { %>
   <span><%- (percentages[target.id]*100).toFixed(2) %>%</span>
   <span> </span>
   <span><%- target.fixed ? '🔒':'' %></span>
+  <% } else { %>
+  <span>Disabled</span>
+  <% } %>
 </abbr>

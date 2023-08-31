@@ -69,6 +69,7 @@ router.use(publicRouter.routes(), publicRouter.allowedMethods());
 
 app.use(router.routes()).use(router.allowedMethods());
 
+console.log(`Listing on ${PORT || 3000}`);
 app.listen(PORT || 3000);
 
 // payout splits ever 2 seconds

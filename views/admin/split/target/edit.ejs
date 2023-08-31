@@ -32,6 +32,10 @@
     </div>
   </div>
   <div>
+    <input <%- target.enabled?'checked':'' %> type="checkbox" id="enabled" name="enabled" />
+    <label class="label-inline" for="enabled">Enabled</label>
+  </div>
+  <div>
     <input <%- target.fixed?'checked':'' %> type="checkbox" id="fixed" name="fixed" />
     <label class="label-inline" for="fixed">Fixed</label>
   </div>
