@@ -1,6 +1,6 @@
 <h1><%- split.address %></h1>
 
-<% if (split.targets.length > 1) { %> <%- include('../components/split-chart', { split }) %> <% } %> <%-
+<% if (split.activeTargets.length > 1) { %> <%- include('../components/split-chart', { split }) %> <% } %> <%-
 include('../components/split-simple-table', { split, showFee: true }) %>
 
 <div class="h-stack flex-wrap">

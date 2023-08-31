@@ -76,6 +76,10 @@ export class Split {
     this.log = appDebug.extend(this.address);
   }
 
+  get activeTargets() {
+    return this.targets.filter((t) => t.enabled);
+  }
+
   get incoming() {
     return db.data.incoming.filter((incoming) => incoming.split === this.id);
   }
@@ -120,7 +124,7 @@ export class Split {
     if (!this.enableNostrProfile) return;
 
     const percentages = this.getSplitPercentages();
-    const targets = this.targets
+    const targets = this.activeTargets
       .map((target) => {
         const percent = (percentages[target.id] * 100).toFixed(2);
         return `${target.link} ${percent}%`;
@@ -170,7 +174,7 @@ export class Split {
   }
   async getMaxComment(): Promise<number | undefined> {
     const targetsMaxComments = await Promise.all(
-      this.targets.filter((t) => t.forwardComment).map((t) => t.getMaxComment())
+      this.activeTargets.filter((t) => t.forwardComment).map((t) => t.getMaxComment())
     );
 
     let maxLength: number | undefined = undefined;
@@ -189,7 +193,7 @@ export class Split {
     // start at 100%
     let remainingPercent = 1;
 
-    const fixed = this.targets.filter((t) => t.fixed);
+    const fixed = this.activeTargets.filter((t) => t.fixed);
     for (const target of fixed) {
       const percent = target.weight / 100;
       if (remainingPercent >= percent) {
@@ -198,7 +202,7 @@ export class Split {
       } else percentages[target.id] = 0;
     }
 
-    const floating = this.targets.filter((t) => !t.fixed);
+    const floating = this.activeTargets.filter((t) => !t.fixed);
     const floatingTotal = floating.reduce((v, t) => v + t.weight, 0);
     for (const target of floating) {
       percentages[target.id] = Math.max(0, remainingPercent * (target.weight / floatingTotal));
@@ -235,7 +239,8 @@ export class Split {
       forwardComment,
       fixed,
       payoutThreshold,
-    }: { weight?: number; forwardComment?: boolean; fixed?: boolean; payoutThreshold?: number }
+      enabled,
+    }: { weight?: number; forwardComment?: boolean; fixed?: boolean; payoutThreshold?: number; enabled?: boolean }
   ) {
     const target = this.getTarget(id);
     if (!target) throw new Error(`No target with id, ${id}`);
@@ -245,6 +250,7 @@ export class Split {
     if (payoutThreshold !== undefined) target.payoutThreshold = payoutThreshold;
     if (forwardComment !== undefined) target.forwardComment = forwardComment;
     if (fixed !== undefined) target.fixed = fixed;
+    if (enabled !== undefined) target.enabled = enabled;
 
     this.updateNostrProfile();
   }
@@ -312,7 +318,8 @@ export class Split {
     this.log(`Received ${msatsToSats(incoming.amount)} sats`);
 
     // create payouts
-    for (const target of this.targets) {
+    for (const target of this.activeTargets) {
+      if (!target.enabled) continue;
       const payoutAmount = Math.round(percentages[target.id] * incoming.amount);
 
       const payout = target.forwardComment
@@ -368,7 +375,7 @@ export class Split {
   }
 
   async payNext() {
-    for (const target of this.targets) {
+    for (const target of this.activeTargets) {
       await target.payNext();
     }
 
@@ -403,7 +410,7 @@ export class Split {
       address: this.address,
       npub: this.npub,
       pubkey: this.pubkey,
-      targets: this.targets.map((t) => ({
+      targets: this.activeTargets.map((t) => ({
         type: t.type,
         displayName: t.displayName,
         percent: percentages[t.id],
@@ -420,7 +427,7 @@ export class Split {
       const pId = "P" + lastId++;
       lines.push(`${sId}("${split.address}") --> ${pId}{Prism}`);
 
-      for (const target of split.targets) {
+      for (const target of split.activeTargets) {
         const tId = "T" + lastId++;
         lines.push(`${pId} --> |${(percentages[target.id] * 100).toFixed(2)}%| ${tId}("${target.displayName}")`);
 
@@ -454,7 +461,20 @@ export class Split {
       const Type = getTargetType(targetJson.type);
 
       const target = new Type(targetJson.id);
-      await target.setInput(targetJson.input);
+      target.input = targetJson.input;
+      target.enabled = false;
+
+      console.log(`Loading target ${targetJson.input}`);
+      target.setInput(targetJson.input).then(
+        () => {
+          target.enabled = targetJson.enabled ?? true;
+        },
+        (e) => {
+          console.log(`Failed to load`);
+          if (target.enabled) target.enabled = false;
+        }
+      );
+
       target.weight = targetJson.weight ?? 10;
       target.fixed = targetJson.fixed ?? false;
       target.forwardComment = targetJson.forwardComment ?? true;

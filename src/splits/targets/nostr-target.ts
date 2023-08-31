@@ -25,20 +25,20 @@ export default class NostrTarget extends Target {
   profile?: ParsedKind0;
 
   get displayName() {
-    return this.profile.name || this.profile.displayName || this.address || this.lnurlp || this.pubkey;
+    return this.profile?.name || this.profile?.displayName || this.address || this.lnurlp || this.pubkey || "anon";
   }
   get link() {
     return `nostr:${this.npub}`;
   }
   get lnurlp() {
-    if (!this.profile) throw new Error("No loaded yet");
-    return this.profile.lud16 ? lnAddressToLNURLP(this.profile.lud16) : this.profile.lud06;
+    if (this.profile?.lud16) return lnAddressToLNURLP(this.profile.lud16);
+    else return this.profile?.lud06;
   }
   get address() {
     return this.profile?.lud16;
   }
   get npub() {
-    return nip19.npubEncode(this.pubkey);
+    return this.pubkey && nip19.npubEncode(this.pubkey);
   }
 
   private getZaperPrivateKey() {

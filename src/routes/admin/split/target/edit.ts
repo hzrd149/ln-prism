@@ -16,12 +16,14 @@ editTargetRouter.post<StateWithTarget>("/", async (ctx) => {
   const input = ctx.request.body.input;
   const forwardComment = !!ctx.request.body.forwardComment;
   const fixed = !!ctx.request.body.fixed;
+  const enabled = !!ctx.request.body.enabled;
 
   await split.updateTarget(target.id, input, {
     weight,
     forwardComment,
     fixed,
     payoutThreshold,
+    enabled,
   });
 
   await ctx.redirect(ctx.state.targetHref);
